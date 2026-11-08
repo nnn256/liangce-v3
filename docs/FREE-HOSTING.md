@@ -1,6 +1,6 @@
 # 量测 v3 · 免绑卡后端托管
 
-目前网页已发布：[量测 v3](https://nnn256.github.io/liangce-v3/)。云后端仍待平台账户授权；配置和本地检查完成不等于公网部署完成。
+网页：[量测 v3](https://nnn256.github.io/liangce-v3/)。后端：[Railway API](https://liangce-v3-api-production.up.railway.app/api/research/health)。2026-11-08已完成账号授权和真实部署，未绑定付款方式。
 
 ## 选择 Railway Free / Trial
 
@@ -12,6 +12,7 @@
 - 已在配置中启用Serverless，连续无出站流量约5–10分钟后休眠。首次访问可能短暂返回502；网页连接检查会重试等待唤醒。不要添加定时保活或第三方监控来阻止休眠。
 - GitHub账户的自动验证决定Full或Limited Trial；Limited可能限制访问行情源。已有归档与重算可独立使用，实际远端行情请求仍须部署后验证，不能承诺平台一定通过账户验证。
 - 新任务保存在临时磁盘，休眠、重启和部署后可能丢失。GitHub中的已核验快照随镜像保留；需要保存的新结果请导出JSON/CSV。
+- 完整分钟历史包含结构证据，5分钟归档压缩后约2.7MB。本次实际下载约17秒，图表请求已单独放宽到90秒，避免原12秒超时后重复下载；小型控制请求仍保留短超时。
 
 Render在本账户创建服务时要求银行卡验证，因此本次停止使用。Northflank价格页写着无需卡，但其billing帮助文档又要求所有用户添加付款方式，官方资料不一致，暂不作为免绑卡方案。此前“Free即可直接部署”的描述不能用于证明本账户无需卡。
 
@@ -32,13 +33,13 @@ npm ci --prefix .railway
 railway init --name liangce-v3
 railway config plan
 railway config apply --yes
-railway domain --service liangce-v3-api --port 8810
+railway domain --service liangce-v3-api --port 8080
 ```
 
-部署前确认账户仍为Trial或Free、计划只新增一个API，启用Serverless且未添加付款方式。若GitHub仓库源需要额外安装Railway GitHub App，由官方授权页完成。部署后从CLI实际输出获取HTTPS域名，不按服务名猜测地址。
+部署前确认账户仍为Trial或Free、计划只新增一个API，启用Serverless且未添加付款方式。若GitHub仓库源需要额外安装Railway GitHub App，由官方授权页完成。部署后从CLI实际输出获取HTTPS域名，不按服务名猜测地址。Railway实际为本服务提供PORT=8080，公网域名必须转发到8080；镜像本地默认8810只在平台未提供PORT时使用。
 
 ## 连接现有网页
 
 远端`/api/research/health`必须实际返回`status: ok`；随后检查跨域、归档、历史前缀任务完成和真实行情请求。全部通过后，把实际HTTPS源地址写入GitHub仓库变量`LIANGCE_API_BASE`，触发`liangce-pages.yml`，再验证公开页面。URL不带`/api`。
 
-本地最小依赖环境已检查15项研究API与托管入口契约，并实际请求到奥雅股份报价。容器构建、平台账户验证、远端任务和网页自动连接分别记录实际结果；尚未执行的项目不得标为成功。
+已执行：全新最小依赖环境15项检查通过；GitHub Actions真实Docker构建、容器内行情依赖导入、HTTP健康、CORS与归档检查通过。Railway部署成功，公网健康返回railway-free，实际奥雅股份报价成功；跨域预检200，日线归档1,381根；通过公网创建截至2022-01-10的回测任务并完成，结果214根且没有未来K线。网页的默认后端地址已写入GitHub仓库变量LIANGCE_API_BASE。

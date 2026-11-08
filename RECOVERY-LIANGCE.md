@@ -31,3 +31,13 @@
 - Railway CLI：D:/stock-dashboard-backups/railway-cli/node_modules/@railway/cli/bin/railway.exe，实际版本5.71.0；尚未登录，下一步官方CLI配对，在用户正常Edge授权，不需要共享cookie/密码/令牌。
 - 下一动作：提交推送本轮托管适配→确认容器CI→railway login生成真实授权链接→用户完成官方登录后创建唯一免费项目/服务→监控部署→实际HTTPS健康/跨域/行情/历史任务→设置GitHub变量LIANGCE_API_BASE并重发Pages。
 - 不重复已成功GitHub账号授权，不重写UI，不混入运行时股票缓存，不重复被自动审核拒绝的公共隧道。
+
+## 已部署恢复点（2026-11-08 23:10 +08:00）
+
+- Railway CLI已由用户配对授权；官方API核实isTrialing=true、30天/5美元、defaultPaymentMethodId=null，未进行付费升级。
+- 真实项目1114f92e-4b6e-45de-a26e-7e3aaa77758f，环境b1cc3554-6fea-44ea-af2f-b088f8ab7266，服务beca79a4-a2d4-45d5-8728-2401f59b2c8f；部署15e2550f-a8f0-4060-9045-a5e1f18888df已SUCCESS。
+- 后端实际地址https://liangce-v3-api-production.up.railway.app；Railway自动PORT=8080，域名已修正targetPort8080；健康200、CORS200、1381根日K归档和奥雅股份报价均通过。
+- 真实公网历史回测任务cf9f27948cdc44b9942f0225cdd2b2fd完成，截至2022-01-10共214根，无未来K线；证据D:/stock-dashboard-backups/railway-public-verification.json与railway-quote-verification.json。
+- GitHub代码49f731a已推送；API/容器CI42492747807和Pages42492747841均成功。已设置仓库变量LIANGCE_API_BASE为真实Railway地址并触发新Pages发布，待当前公开浏览器确认自动连接。
+- 下一动作：完成最新Pages运行，浏览器确认自动连接和正常图表；更新托管文档及已部署恢复点到GitHub，保存新bundle；最后复核实际部署和前端版本，交付网页/后端/仓库链接及免费额度限制。
+- 最新验收修正：5分钟完整历史23,520根、压缩约2.7MB，实际公网下载17.2秒；原12秒图表请求超时会重复下载归档。已仅将loadPanel下载超时改为90秒，TypeScript与生产构建通过。当前待发布这次修正并复核真实网页不降级到归档。

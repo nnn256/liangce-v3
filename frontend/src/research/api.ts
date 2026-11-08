@@ -38,7 +38,8 @@ export async function archivedPanel(symbol:string,period:string,signal?:AbortSig
 }
 export async function loadPanel(symbol:string,period:string,signal:AbortSignal):Promise<{panel:Panel;mode:'api'|'archive';notice?:string}>{
  if(publicStatic()&&!backend())return {panel:await archivedPanel(symbol,period,signal),mode:'archive',notice:'公开历史归档 · 新计算需要连接后端'};
- try{return {panel:await request('/api/research/panel/'+symbol+'/'+period,{},signal),mode:'api'}}
+ // Full intraday evidence can take longer than small control requests to download.
+ try{return {panel:await request('/api/research/panel/'+symbol+'/'+period,{},signal,90000),mode:'api'}}
  catch(e){if(signal.aborted)throw e;const panel=await archivedPanel(symbol,period,signal);return {panel,mode:'archive',notice:backend()?'后端暂不可用，当前显示已核验历史归档':'公开历史归档 · 新计算需要连接后端'}}
 }
 export async function searchSymbols(q:string,signal:AbortSignal):Promise<Stock[]>{
