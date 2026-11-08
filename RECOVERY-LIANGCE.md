@@ -19,3 +19,15 @@
 - 已测试：HostedServerTests与ResearchApiTests共15通过，启动不导入科学计算/整套终端，跨域GitHub origin、静态归档、超限不截断、历史日期重算均通过。
 - 登录状态：GitHub CLI账号nnn256仍可用，Render浏览器session liangce-hosting-92e3ea3c8bd4未登录；无Render API key。账号官方GitHub/Render登录需用户完成，不能把GitHub CLI令牌发给平台冒充登录。
 - 下一动作：构建前端并提交部署适配，打开Render一键部署让用户登录；授权后检查免费套餐、创建部署、监控服务健康，设置LIANGCE_API_BASE并重新发布Pages，验证真实公网任务。
+
+## 最新恢复点：免绑卡托管（2026-11-08）
+
+- 当前目标：用户报告Render要求银行卡；改为免绑卡部署Python后端，随后连接现有GitHub Pages。
+- Render：停止创建，不输入卡号。Northflank价格页与billing文档冲突，不作为已确认免绑卡平台。
+- 当前方案Railway Trial/Free：官方说明30天或5美元试用后转Free，每月1美元额度；非无限免费，可能额度用完停止；账户自动验证可能限制行情出网。
+- 已完成：Dockerfile.hosted最小非root镜像；.railway/railway.ts当前IaC（官方railway.json已弃用）及SDK锁文件；单副本512MB/1CPU，自动休眠，8,000K线/单线程/2任务；更新托管文档。
+- 本地检查executed：全新.runtime/hosted-check只装requirements-hosted.txt+httpx，15项测试通过；market_gateway导入不加载numpy/pandas/akshare/mootdx；实际quote(sz300949)返回奥雅股份；IaC SDK 3.16.0实际解析生成D:/stock-dashboard-backups/railway-desired-config.json。
+- 容器检查：已添加GitHub API工作流的docker构建、镜像内行情依赖导入、HTTP健康/CORS/真实1381根日线归档验证；待本轮发布工作流实际运行，宿主没有Docker。
+- Railway CLI：D:/stock-dashboard-backups/railway-cli/node_modules/@railway/cli/bin/railway.exe，实际版本5.71.0；尚未登录，下一步官方CLI配对，在用户正常Edge授权，不需要共享cookie/密码/令牌。
+- 下一动作：提交推送本轮托管适配→确认容器CI→railway login生成真实授权链接→用户完成官方登录后创建唯一免费项目/服务→监控部署→实际HTTPS健康/跨域/行情/历史任务→设置GitHub变量LIANGCE_API_BASE并重发Pages。
+- 不重复已成功GitHub账号授权，不重写UI，不混入运行时股票缓存，不重复被自动审核拒绝的公共隧道。

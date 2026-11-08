@@ -1,37 +1,44 @@
-# 量测 v3 · Render免费后端
+# 量测 v3 · 免绑卡后端托管
 
-已准备好[一键部署](https://render.com/deploy?repo=https://github.com/nnn256/liangce-v3)，使用仓库根目录的`render.yaml`。登录Render后可直接导入；服务计算套餐在文件中明确为`plan: free`。
+目前网页已发布：[量测 v3](https://nnn256.github.io/liangce-v3/)。云后端仍待平台账户授权；配置和本地检查完成不等于公网部署完成。
 
-## 已核对的免费条件
+## 选择 Railway Free / Trial
 
-核对日期：2026-11-08；来源：[Render免费说明](https://render.com/docs/free)、[Blueprint字段](https://render.com/docs/blueprint-spec)、[FastAPI部署](https://render.com/docs/deploy-fastapi)。
+核对日期：2026-11-08。官方来源：[免费试用](https://docs.railway.com/pricing/free-trial)、[套餐与资源计费](https://docs.railway.com/pricing/plans)、[Serverless休眠](https://docs.railway.com/deployments/serverless)。
 
-- 免费Web Service提供HTTPS地址，0.1 CPU / 512MB内存。
-- 连续15分钟无流量会休眠，下次访问唤醒约需一分钟。网页保留历史归档；设置中的连接检查等待最多90秒。
-- 工作区每月750小时免费实例时间，多个免费服务共享。达到免费额度时可能暂停。
-- 本地文件是临时存储，休眠、重启、部署后新任务结果可能丢失。GitHub随代码保存的研究快照可以重新加载；需要留存的新结果请导出JSON/CSV。
-- 构建分钟和出站带宽另有工作区包含额度。若没有添加付款方式，超额后暂停服务/构建，而不是必须升级才能使用本项目。仅使用Free实例，无需在本部署配置中选择付费数据库或磁盘。
+- 新账户可免绑卡使用30天或5美元试用额度，以先达到的为准。试用结束后自动转为Free，每月1美元资源额度，不结转。
+- 这不是无限免费服务器。内存、CPU、出站流量按实际用量消耗额度；频繁计算、长时间运行可能提前耗尽额度并停止服务。不选择Hobby或Pro付费订阅。
+- Free最多1个副本、0.5GB内存、1vCPU。项目只部署一个轻量API，不创建数据库、持久盘或其他付费资源。
+- 已在配置中启用Serverless，连续无出站流量约5–10分钟后休眠。首次访问可能短暂返回502；网页连接检查会重试等待唤醒。不要添加定时保活或第三方监控来阻止休眠。
+- GitHub账户的自动验证决定Full或Limited Trial；Limited可能限制访问行情源。已有归档与重算可独立使用，实际远端行情请求仍须部署后验证，不能承诺平台一定通过账户验证。
+- 新任务保存在临时磁盘，休眠、重启和部署后可能丢失。GitHub中的已核验快照随镜像保留；需要保存的新结果请导出JSON/CSV。
 
-Hugging Face官方当前说明创建Docker/Gradio计算Space需要付费账户，因此本次不采用它，尽管CPU Basic硬件本身仍标为每小时免费。
+Render在本账户创建服务时要求银行卡验证，因此本次停止使用。Northflank价格页写着无需卡，但其billing帮助文档又要求所有用户添加付款方式，官方资料不一致，暂不作为免绑卡方案。此前“Free即可直接部署”的描述不能用于证明本账户无需卡。
 
-## 本项目如何适配
+## 已准备的部署文件
 
-`web.hosted_server:app`只在启动时导入FastAPI和研究路由。行情网关按实际请求延迟加载；启动不加载numpy、pandas、akshare、mootdx和原整套终端。
+- `Dockerfile.hosted`：只安装`requirements-hosted.txt`，只复制研究引擎、行情网关及其依赖、已构建前端和真实归档。以非root用户运行，使用平台`PORT`。
+- `.railway/railway.ts`：Railway当前IaC配置，固定仓库`nnn256/liangce-v3`和`main`分支、轻量Dockerfile、健康检查、单副本、512MB上限及自动休眠。
+- `.railway/package-lock.json`：锁定IaC SDK。平台已弃用旧`railway.json`，本次不新增该格式。
 
-Render构建只安装`requirements-hosted.txt`。仓库已提交可用的前端构建与15周期研究快照，服务不需要重新下载Node和构建前端。
+研究API保留1个计算线程、最多2个排队/执行任务和单次8,000根输入限制。超过限制会明确报错，绝不截断历史冒充全量结果。完整归档仍可查看。
 
-限制公开写入任务为1个工作线程、最多2个排队/执行任务、单次8,000根输入；超过时明确报错，不截断价格来冒充全历史。全部历史图和已有基准回测仍能查看。若要重放较长分钟历史，可在本地完整后端运行；免费机器的CPU和内存不适合同时重算全部市场。
+## 官方账号授权后部署
 
-`LIANGCE_ALLOWED_ORIGINS=https://nnn256.github.io`允许现有GitHub Pages调用。健康接口`/api/research/health`返回实际计算限制和临时存储属性。
+先执行`railway login --browserless`，在Edge打开该次CLI实际生成的官方链接完成配对。登录或注册由账户本人完成；GitHub CLI授权不能代替Railway授权，不需要在聊天发送密码、令牌或银行卡。
 
-## 部署后连接
+```powershell
+npm ci --prefix .railway
+railway init --name liangce-v3
+railway config plan
+railway config apply --yes
+railway domain --service liangce-v3-api --port 8810
+```
 
-部署成功后，Render会显示实际服务URL，例如`https://某个服务名.onrender.com`。先访问该地址的`/api/research/health`，必须实际返回`status: ok`。不能仅凭文件里服务名推定URL。
+部署前确认账户仍为Trial或Free、计划只新增一个API，启用Serverless且未添加付款方式。若GitHub仓库源需要额外安装Railway GitHub App，由官方授权页完成。部署后从CLI实际输出获取HTTPS域名，不按服务名猜测地址。
 
-再在[量测v3网页](https://nnn256.github.io/liangce-v3/)的“连接设置”填入该HTTPS源地址，点击“保存并检查”。若要所有访客自动连接，用GitHub仓库变量`LIANGCE_API_BASE`设置该实际地址，再运行Pages工作流。无需在地址后添加`/api`。
+## 连接现有网页
 
-如果Render要求邮箱验证、GitHub授权或账户安全验证，需要账户本人完成。GitHub CLI的授权不等于Render账号登录。服务创建与部署只使用已经准备好的Free配置。
+远端`/api/research/health`必须实际返回`status: ok`；随后检查跨域、归档、历史前缀任务完成和真实行情请求。全部通过后，把实际HTTPS源地址写入GitHub仓库变量`LIANGCE_API_BASE`，触发`liangce-pages.yml`，再验证公开页面。URL不带`/api`。
 
-## 已执行检查
-
-`tests/test_hosted_server.py`检查最小启动、跨域预检、真实快照、超限不截断、历史前缀计算及临时存储说明；与研究接口测试共15项通过。创建好服务后还需检查远端健康、公开网页连接和实际任务完成，才能记为已上线。
+本地最小依赖环境已检查15项研究API与托管入口契约，并实际请求到奥雅股份报价。容器构建、平台账户验证、远端任务和网页自动连接分别记录实际结果；尚未执行的项目不得标为成功。

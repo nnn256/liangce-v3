@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1 PYTHONUTF8=1 PORT=8810 \
+    LIANGCE_HOSTING=hosted-container LIANGCE_EPHEMERAL=1 \
+    LIANGCE_ALLOWED_ORIGINS=https://nnn256.github.io \
+    LIANGCE_RUNTIME=/tmp/liangce-research STOCK_DATA_HOME=/tmp/liangce-data \
+    LIANGCE_WORKERS=1 LIANGCE_QUEUE_LIMIT=2 LIANGCE_MAX_COMPUTE_BARS=8000 \
+    LIANGCE_READONLY=0
+COPY requirements-hosted.txt ./
+RUN pip install --no-cache-dir -r requirements-hosted.txt
+COPY chanmodel ./chanmodel
+COPY core ./core
+COPY scripts/data_feed.py scripts/stock_dashboard.py scripts/ths_extractor.py ./scripts/
+COPY web/hosted_server.py web/research_api.py web/market_gateway.py ./web/
+COPY web/dist ./web/dist
+COPY data/research ./data/research
+COPY data/stock_names.json ./data/stock_names.json
+RUN useradd --create-home --uid 10001 liangce && chown -R liangce:liangce /app/data
+USER liangce
+EXPOSE 8810
+CMD ["sh", "-c", "exec python -m uvicorn web.hosted_server:app --host 0.0.0.0 --port \"${PORT:-8810}\" --workers 1"]

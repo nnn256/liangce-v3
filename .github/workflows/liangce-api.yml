@@ -16,3 +16,44 @@ jobs:
       - run: python -m unittest tests.test_research_api tests.test_hosted_server -v
         env:
           PYTHONUTF8: '1'
+  hosted-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build minimal hosted image
+        run: docker build -f Dockerfile.hosted -t liangce-hosted .
+      - name: Check gateway dependencies in the actual image
+        run: docker run --rm liangce-hosted python -c "from web.hosted_server import app; import market_gateway"
+      - name: Check HTTP health, CORS and actual archive
+        run: |
+          docker run -d --name liangce-hosted -p 8810:8810 liangce-hosted
+          python - <<'PY'
+          import gzip, json, time
+          from urllib.request import Request, urlopen
+          base='http://127.0.0.1:8810'
+          for attempt in range(30):
+              try:
+                  with urlopen(base+'/api/research/health', timeout=2) as response:
+                      health=json.load(response)
+                  break
+              except OSError:
+                  time.sleep(1)
+          else:
+              raise SystemExit('Hosted container did not become healthy')
+          assert health['status']=='ok'
+          assert health['compute_limits']=={'workers':1,'queue':2,'max_input_bars':8000}
+          assert health['runtime_storage']=='ephemeral'
+          request=Request(base+'/api/research/jobs', method='OPTIONS', headers={
+              'Origin':'https://nnn256.github.io',
+              'Access-Control-Request-Method':'POST',
+              'Access-Control-Request-Headers':'content-type'})
+          with urlopen(request, timeout=5) as response:
+              assert response.headers['Access-Control-Allow-Origin']=='https://nnn256.github.io'
+          with urlopen(base+'/research/sz300949__day.json.gz', timeout=5) as response:
+              panel=json.loads(gzip.decompress(response.read()))
+          assert len(panel['bars'])==1381
+          print('Minimal container HTTP, CORS, archive and resource limits passed')
+          PY
+      - name: Show container logs
+        if: always()
+        run: docker logs liangce-hosted || true
