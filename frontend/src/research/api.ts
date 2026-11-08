@@ -1,6 +1,13 @@
 import type {Panel,Stock} from './types';
 const BASE=import.meta.env.BASE_URL;
-export function backend(){return (localStorage.getItem('liangce.api')||import.meta.env.VITE_API_BASE||'').replace(/\/$/,'')}
+const PUBLIC_BACKEND='https://liangce-v3-api-production.up.railway.app';
+export function defaultBackend(){
+ const configured=import.meta.env.VITE_API_BASE?.trim();
+ if(configured)return configured.replace(/\/+$/,'');
+ if(location.hostname==='nnn256.github.io')return PUBLIC_BACKEND;
+ return publicStatic()?'':location.origin;
+}
+export function backend(){return (localStorage.getItem('liangce.api')?.trim()||defaultBackend()).replace(/\/+$/,'')}
 export function token(){return sessionStorage.getItem('liangce.token')||''}
 export function publicStatic(){return location.hostname.endsWith('.github.io')||new URLSearchParams(location.search).get('static')==='1'}
 export async function request<T=any>(path:string,options:RequestInit={},signal?:AbortSignal,timeoutMs=12000):Promise<T>{

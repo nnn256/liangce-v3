@@ -52,7 +52,21 @@ jobs:
           with urlopen(base+'/research/sz300949__day.json.gz', timeout=5) as response:
               panel=json.loads(gzip.decompress(response.read()))
           assert len(panel['bars'])==1381
-          print('Minimal container HTTP, CORS, archive and resource limits passed')
+          request=Request(base+'/api/research/jobs', method='POST',
+              headers={'Origin':'https://liangce-v3-api-production.up.railway.app',
+                       'Content-Type':'application/json'},
+              data=json.dumps({'period':'day','cutoff':'2022-01-10','mode':'backtest'}).encode())
+          with urlopen(request, timeout=5) as response:
+              assert response.status==202
+              job=json.load(response)
+          for attempt in range(20):
+              with urlopen(base+'/api/research/jobs/'+job['id'], timeout=5) as response:
+                  job=json.load(response)
+              if job['state'] in ('completed','failed'):
+                  break
+              time.sleep(1)
+          assert job['state']=='completed',job
+          print('Minimal container HTTP, CORS, archive, same-origin jobs and resource limits passed')
           PY
       - name: Show container logs
         if: always()

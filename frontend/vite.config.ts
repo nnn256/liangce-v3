@@ -96,7 +96,19 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          navigateFallbackDenylist: [/^\/api\//, /^\/ws/],
+          directoryIndex: null,
+          navigateFallback: null,
+          cleanupOutdatedCaches: true,
+          runtimeCaching: [{
+            urlPattern: ({request,url}) => request.mode === 'navigate' && !/^\/(?:api|ws)(?:\/|$)/.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'liangce-pages',
+              networkTimeoutSeconds: 5,
+              cacheableResponse: {statuses: [200]},
+              precacheFallback: {fallbackURL: 'index.html'},
+            },
+          }],
         },
         devOptions: {
           enabled: true,
