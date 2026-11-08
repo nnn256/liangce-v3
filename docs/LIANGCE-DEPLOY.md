@@ -18,6 +18,8 @@
 
 目标展示名“量测v3”，仓库地址使用`liangce-v3`。仓库工作流`.github/workflows/liangce-pages.yml`在main更新时构建、类型检查并发布到GitHub Pages。Pages设置选择GitHub Actions。
 
+本次已创建并发布：[量测 v3 在线网页](https://nnn256.github.io/liangce-v3/)；[公开仓库](https://github.com/nnn256/liangce-v3)。代码由GitHub CLI官方设备授权后推送，密钥不进入仓库。
+
 GitHub Pages只能运行前端和静态研究数据。公开网页带有奥雅股份15周期、原文条款确认与历史回测，可独立查看、缩放、查证据和导出。它不是后台Python计算服务。
 
 后端已经有HTTPS地址时，在仓库变量设置`LIANGCE_API_BASE`后重新运行Pages工作流；也可以在网页“连接设置”中填写地址。后端设置`LIANGCE_ALLOWED_ORIGINS=https://你的账号.github.io`。访问令牌只在浏览器会话中保留，不进入GitHub。

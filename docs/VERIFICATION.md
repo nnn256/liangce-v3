@@ -2,6 +2,8 @@
 
 日期：2026-11-08。工作目录：D:/stock-dashboard。上游基线9886f5f；实现分支codex/liangce-v3。
 
+已发布：[公开网页](https://nnn256.github.io/liangce-v3/) · [公开代码](https://github.com/nnn256/liangce-v3)。真实公网网页也完整通过390/768/1280/1440四种宽度的相同验收；浏览器JavaScript错误为空。GitHub Pages和API检查工作流均成功。
+
 ## 已执行
 
 - Python pytest：129 passed，0 failed；原仓库71项unittest及新增研究接口均通过。

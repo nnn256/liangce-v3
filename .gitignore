@@ -109,3 +109,5 @@ docs/reference/
 artifacts/
 *.bundle
 frontend/.env.local
+# New live sector snapshots are runtime cache; existing upstream fixtures remain tracked.
+data/stock_data/sector_flow_d1_*.json
