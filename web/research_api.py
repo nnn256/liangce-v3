@@ -17,7 +17,15 @@ CN=timezone(timedelta(hours=8))
 PERIODS={'auction','timeshare','five_days','timeshare_first','day','5d','1m','5m','15m','30m','60m','week','month','quarter','year'}
 NATIVE={'day':'1D','5m':'5m','15m':'15m','30m':'30m','60m':'60m','week':'1W','month':'1M'}
 router=APIRouter(prefix='/api/research',tags=['量测 v3'])
-pool=ThreadPoolExecutor(max_workers=2,thread_name_prefix='liangce')
+def bounded_env(name,default,minimum,maximum):
+    try:value=int(os.environ.get(name,str(default)))
+    except ValueError:value=default
+    return max(minimum,min(value,maximum))
+
+WORKERS=bounded_env('LIANGCE_WORKERS',2,1,2)
+QUEUE_LIMIT=bounded_env('LIANGCE_QUEUE_LIMIT',4,1,4)
+MAX_COMPUTE_BARS=bounded_env('LIANGCE_MAX_COMPUTE_BARS',30000,100,30000)
+pool=ThreadPoolExecutor(max_workers=WORKERS,thread_name_prefix='liangce')
 lock=threading.RLock();jobs:dict[str,dict]={}
 
 
@@ -38,7 +46,7 @@ def validate_period(value):
 def manifest():return json.loads((ARCHIVE/'manifest.json').read_text(encoding='utf-8'))
 
 
-@lru_cache(maxsize=12)
+@lru_cache(maxsize=1)
 def read_snapshot(code,period):
     path=ARCHIVE/f'{code}__{period}.json.gz'
     if not path.is_file():raise HTTPException(404,'该股票/周期没有已归档研究，请连接后端并重新计算')
@@ -62,6 +70,10 @@ def health():
     return {'status':'ok','product':'量测 v3','version':'3.0.0','snapshot_date':manifest()['as_of'],
             'source':'verified_historical_snapshot','compute_enabled':os.environ.get('LIANGCE_READONLY')!='1',
             'authentication_required':bool(os.environ.get('LIANGCE_API_TOKEN')),'running_jobs':sum(j['state']=='running' for j in jobs.values()),
+            'hosting':os.environ.get('LIANGCE_HOSTING','local'),
+            'compute_limits':{'workers':WORKERS,'queue':QUEUE_LIMIT,'max_input_bars':MAX_COMPUTE_BARS},
+            'runtime_storage':'ephemeral' if os.environ.get('LIANGCE_EPHEMERAL')=='1' else 'local',
+            'frontend_url':'https://nnn256.github.io/liangce-v3/',
             'engine':'original_clause_gated_causal_confirmation_v1','execution_allowed':False}
 
 
@@ -174,7 +186,7 @@ def build_dynamic(req,ident):
         cutoff=(req.cutoff+'T23:59:59+08:00') if req.cutoff else datetime.now(CN).isoformat()
         bars=[b for b in bars if b.closed and time_value(b.closed_at)<=time_value(cutoff)]
         if len(bars)<3:raise ValueError('截止日期内少于3根闭合K线')
-        if len(bars)>30000:raise ValueError('单次任务最多30,000根K线')
+        if len(bars)>MAX_COMPUTE_BARS:raise ValueError(f'当前实例单次最多计算{MAX_COMPUTE_BARS:,}根K线，本次有{len(bars):,}根。请指定更早截止日期缩短回放，全部历史图和基准回测仍可直接查看。')
         digest=hashlib.sha256(json.dumps([[b.closed_at,b.open,b.high,b.low,b.close,b.volume] for b in bars]).encode()).hexdigest()
         with lock:jobs[ident]['progress']=15
         report=analyze_complete(req.symbol,req.period,bars,cutoff,digest);ledger=None
@@ -223,7 +235,7 @@ def create(req:JobRequest,request:Request):
         active=[j for j in jobs.values() if j['state'] in {'queued','running'}]
         same=next((j for j in active if j['request']==req.model_dump()),None)
         if same:return same
-        if len(active)>=4:raise HTTPException(429,'当前计算队列已满，请等待现有任务完成')
+        if len(active)>=QUEUE_LIMIT:raise HTTPException(429,'当前计算队列已满，请等待现有任务完成')
         if len(jobs)>=100:
             done=[k for k,v in jobs.items() if v['state'] not in {'queued','running'}]
             for k in done[:20]:jobs.pop(k,None)

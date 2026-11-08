@@ -1,0 +1,6 @@
+# Free-hosting runtime. Research computations use the Python standard library.
+# Quote/history gateways use urllib and load on demand. Desktop/scientific
+# extras remain in requirements.txt and are not imported by hosted_server.
+fastapi>=0.115.0,<1
+pydantic>=2.8.0,<3
+uvicorn>=0.30.0,<1

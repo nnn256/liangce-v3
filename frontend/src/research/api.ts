@@ -3,12 +3,30 @@ const BASE=import.meta.env.BASE_URL;
 export function backend(){return (localStorage.getItem('liangce.api')||import.meta.env.VITE_API_BASE||'').replace(/\/$/,'')}
 export function token(){return sessionStorage.getItem('liangce.token')||''}
 export function publicStatic(){return location.hostname.endsWith('.github.io')||new URLSearchParams(location.search).get('static')==='1'}
-export async function request<T=any>(path:string,options:RequestInit={},signal?:AbortSignal):Promise<T>{
+export async function request<T=any>(path:string,options:RequestInit={},signal?:AbortSignal,timeoutMs=12000):Promise<T>{
  if(publicStatic()&&!backend())throw new Error('公开网页使用已核验归档；新计算请在连接设置中填写后端地址');
- const timeout=AbortSignal.timeout(12000),bounded=signal?AbortSignal.any([signal,timeout]):timeout;
+ const timeout=AbortSignal.timeout(timeoutMs),bounded=signal?AbortSignal.any([signal,timeout]):timeout;
  const response=await fetch(backend()+path,{...options,signal:bounded,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(token()?{Authorization:'Bearer '+token()}:{}),...options.headers}});
  if(!response.ok){let message='请求失败 '+response.status;try{const b=await response.json();message=typeof b.detail==='string'?b.detail:JSON.stringify(b.detail||b.message||b)}catch{}throw new Error(message)}
  const type=response.headers.get('content-type')||'';if(!type.includes('json'))throw new Error('当前网址未连接研究后端');return response.json();
+}
+export async function wakeBackend(signal?:AbortSignal){
+ if(publicStatic()&&!backend())return request('/api/research/health',{},signal);
+ const deadline=Date.now()+90000;let failure:unknown;
+ while(Date.now()<deadline){
+  if(signal?.aborted)throw signal.reason;
+  try{
+   const data=await request('/api/research/health',{},signal,Math.min(15000,deadline-Date.now()));
+   if(data.status==='ok'&&data.product==='量测 v3')return data;
+   throw new Error('服务正在唤醒，尚未返回研究后端状态');
+  }catch(error){
+   if(signal?.aborted)throw error;
+   failure=error;
+   if(error instanceof Error&&/401|403|令牌|只读/.test(error.message))throw error;
+   await new Promise<void>((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(signal?.reason)};const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve()},1500);signal?.addEventListener('abort',abort,{once:true})});
+  }
+ }
+ throw failure instanceof Error?new Error('后端唤醒未完成，请稍后重试。'+failure.message):new Error('后端唤醒超时，请稍后重试');
 }
 export async function archivedPanel(symbol:string,period:string,signal?:AbortSignal):Promise<Panel>{
  const manifest=await fetch(BASE+'research/manifest.json',{signal}).then(r=>{if(!r.ok)throw Error('静态研究目录不可用');return r.json()});

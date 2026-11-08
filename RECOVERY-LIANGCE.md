@@ -10,3 +10,12 @@
 - 认证：GitHub CLI已通过系统keyring保存账号nnn256，授权repo/workflow；不在文件或聊天保存令牌。
 - 下一动作：仓库同步最后验收记录；核对本地服务后交付网址/仓库/本地项目。未来云部署需要正式服务器/平台，不能绕过公网隧道审查拒绝。
 - 用户已选图三风格并要求自行适配；不再询问常规设计确认。原有终端通过?terminal=1保留，新工作区默认入口。
+
+## 当前任务：免费托管后端
+
+- 用户连续要求“使用免费的托管平台”“继续”，授权完成免费部署及前端连接。
+- 当前选择：Render Free Web Service。2026-11-08官方文档核对：0.1CPU/512MB、15分钟空闲休眠、约一分钟冷启动、750小时/月工作区共享、临时磁盘。HF Docker创建已要求付费套餐，不采用。
+- 已实现：render.yaml明确plan free、新轻量入口web/hosted_server.py、最小requirements-hosted.txt；research_api单快照缓存、可配置1线程/2队列/8000K线限制；网页连接检查可等90秒冷启动。
+- 已测试：HostedServerTests与ResearchApiTests共15通过，启动不导入科学计算/整套终端，跨域GitHub origin、静态归档、超限不截断、历史日期重算均通过。
+- 登录状态：GitHub CLI账号nnn256仍可用，Render浏览器session liangce-hosting-92e3ea3c8bd4未登录；无Render API key。账号官方GitHub/Render登录需用户完成，不能把GitHub CLI令牌发给平台冒充登录。
+- 下一动作：构建前端并提交部署适配，打开Render一键部署让用户登录；授权后检查免费套餐、创建部署、监控服务健康，设置LIANGCE_API_BASE并重新发布Pages，验证真实公网任务。
