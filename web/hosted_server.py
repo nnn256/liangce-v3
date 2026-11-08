@@ -55,7 +55,7 @@ def research_asset(filename:str):
 
 @app.get('/{filename}')
 def app_asset(filename:str):
-    allowed={'liangce.svg','icon.svg','manifest.webmanifest','registerSW.js','sw.js','pwa-192x192.png','pwa-512x512.png','pwa-maskable-512x512.png','apple-touch-icon.png'}
+    allowed={'liangce.svg','icon.svg','manifest.webmanifest','registerSW.js','cache-upgrade.js','sw.js','pwa-192x192.png','pwa-512x512.png','pwa-maskable-512x512.png','apple-touch-icon.png'}
     if filename not in allowed and not (filename.startswith('workbox-') and filename.endswith('.js')):raise HTTPException(404,'Not found')
     target=(DIST/filename).resolve()
     if target.parent!=DIST.resolve() or not target.is_file():raise HTTPException(404,'Not found')

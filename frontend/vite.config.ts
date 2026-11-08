@@ -100,6 +100,7 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
+          importScripts: ['cache-upgrade.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           directoryIndex: null,
           navigateFallback: null,
