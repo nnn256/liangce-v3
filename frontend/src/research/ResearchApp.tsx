@@ -43,7 +43,7 @@ export default function ResearchApp(){
   catch(e:any){if(!control.signal.aborted){setHealth(null);setConnectionMessage(e.message)}throw e}
   finally{if(!control.signal.aborted)setConnecting(false)}
  };
- const fetchPanel=async(code=symbol,p=period)=>{abort.current?.abort();const control=new AbortController();abort.current=control;setLoading(true);setError('');setPanel(null);setEvidence(null);setFocus(null);try{const res=await loadPanel(code,p,control.signal);if(control.signal.aborted)return;setPanel(res.panel);setMode(res.mode);setNotice(res.notice||'');}catch(e:any){if(!control.signal.aborted){setError(e.message);setPanel(null)}}finally{if(!control.signal.aborted)setLoading(false)}};
+ const fetchPanel=async(code=symbol,p=period)=>{abort.current?.abort();const control=new AbortController();abort.current=control;setLoading(true);setError('');setNotice('');setPanel(null);setEvidence(null);setFocus(null);try{const res=await loadPanel(code,p,control.signal);if(control.signal.aborted)return;setPanel(res.panel);setMode(res.mode);setNotice(res.notice||'');}catch(e:any){if(!control.signal.aborted){setError(e.message);setPanel(null)}}finally{if(!control.signal.aborted)setLoading(false)}};
  useEffect(()=>{void fetchPanel();const url=new URL(location.href);url.searchParams.set('symbol',symbol);url.searchParams.set('period',period);url.searchParams.delete('terminal');history.replaceState(null,'',url)},[symbol,period]);
  useEffect(()=>{localStorage.setItem('liangce.watchlist',JSON.stringify(watchlist))},[watchlist]);
  useEffect(()=>{localStorage.setItem('liangce.layers',JSON.stringify([...layers]))},[layers]);
