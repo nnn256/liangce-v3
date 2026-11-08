@@ -1,0 +1,25 @@
+{
+  "actions": [
+    {
+      "ex_date": "2026-05-29",
+      "record_date": "2026-05-28",
+      "public_notice_date": "2026-05-22",
+      "share_multiplier": 1.45,
+      "cash_per_share": 0,
+      "description": "每10股转增4.5股",
+      "sources": [
+        "dividend-source-response.json",
+        "corporate-actions-sina.html"
+      ]
+    }
+  ],
+  "response_hashes": {
+    "dividend-source-response.json": "3ca06280e20196cdb1d592f2b02863a6a0968fd7e01cbae279a2d90e32b5c240",
+    "corporate-actions-sina.html": "fea6774c78f922c23e5944707f77009dcddf9719c7c1a1e06da44133f826de70"
+  },
+  "sources_agree": true,
+  "adjustment": "multiply post-ex-date prices by cumulative split ratio; do not rewrite earlier bars",
+  "volume": "shares as actually observed, not adjusted",
+  "portfolio": "execute raw prices, credit shares on ex-date",
+  "pre2026": "Sina table shows no distributions 2021..2025"
+}

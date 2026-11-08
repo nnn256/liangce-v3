@@ -55,6 +55,7 @@ function syncWebDistPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
+    base: process.env.VITE_BASE || '/',
     plugins: [
       react(),
       tailwindcss(),
@@ -62,31 +63,31 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
         manifest: {
-          id: '/',
-          name: 'AlphaPulse L1 极速行情终端',
-          short_name: 'AlphaPulse',
+          id: './',
+          name: '量测 v3 · 缠论结构研究工作台',
+          short_name: '量测 v3',
           description: '面向 A 股市场的专业级 Level-1 实时五档看盘与技术分析终端',
-          theme_color: '#0d0e12',
-          background_color: '#0d0e12',
+          theme_color: '#f4f7fa',
+          background_color: '#f4f7fa',
           display: 'standalone',
           orientation: 'any',
-          start_url: '/',
-          scope: '/',
+          start_url: './',
+          scope: './',
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: './pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-512x512.png',
+              src: './pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: './pwa-maskable-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',

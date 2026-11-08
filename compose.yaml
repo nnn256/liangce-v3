@@ -1,0 +1,15 @@
+services:
+  liangce:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8810:8810"
+    environment:
+      LIANGCE_PUBLIC_MODE: "1"
+      LIANGCE_READONLY: "${LIANGCE_READONLY:-0}"
+      LIANGCE_ALLOWED_ORIGINS: "${LIANGCE_ALLOWED_ORIGINS:-}"
+      LIANGCE_API_TOKEN: "${LIANGCE_API_TOKEN:-}"
+    volumes:
+      - liangce-runtime:/app/.runtime
+volumes:
+  liangce-runtime:

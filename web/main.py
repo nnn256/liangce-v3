@@ -655,7 +655,7 @@ def api_quant_intraday_radar(symbol: str = "000530.SZ", limit: int = 50):
 
     try:
         res = qds.get_real_intraday_radar(symbol=clean_sym, limit=safe_limit)
-        _intraday_radar_cache[cache_key] = (now, res)
+        _intraday_radar_cache[cache_key] = (time.time(), res)
         if len(_intraday_radar_cache) > 200:
             old_keys = sorted(_intraday_radar_cache.keys(), key=lambda k: _intraday_radar_cache[k][0])[:50]
             for ok in old_keys:

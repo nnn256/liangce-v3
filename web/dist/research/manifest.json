@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "default_symbol": "sz300949",
+  "default_period": "5m",
+  "as_of": "2026-11-06T15:00:00+08:00",
+  "profile": "original_clause_gated_causal_confirmation_v1",
+  "symbols": [
+    {
+      "symbol": "sz300949",
+      "code": "300949",
+      "name": "奥雅股份",
+      "market": "SZ",
+      "available_periods": [
+        "15m",
+        "1m",
+        "30m",
+        "5d",
+        "5m",
+        "60m",
+        "auction",
+        "day",
+        "five_days",
+        "month",
+        "quarter",
+        "timeshare",
+        "timeshare_first",
+        "week",
+        "year"
+      ],
+      "price": 56.99,
+      "change_percent": 12.5173
+    }
+  ],
+  "files": [
+    {
+      "file": "sz300949__15m.json.gz",
+      "sha256": "8c53587bef1351b86a4277f3252f7dd8da3077d3b0707dd29afbe5a88a2387cd",
+      "bytes": 945952
+    },
+    {
+      "file": "sz300949__1m.json.gz",
+      "sha256": "c954d6a22cd1d031d24e6739d938a81199e28a039f1d54e0610aae0bda4b339f",
+      "bytes": 2444560
+    },
+    {
+      "file": "sz300949__30m.json.gz",
+      "sha256": "1333d045e51dbb0419a0365529c164b1757e8b97e429a52f8c5177cf495d163f",
+      "bytes": 485325
+    },
+    {
+      "file": "sz300949__5d.json.gz",
+      "sha256": "1cc0ad0cac624fcbc514e3f48769aa6b97152106712a569f4349f1e29cd530dc",
+      "bytes": 36646
+    },
+    {
+      "file": "sz300949__5m.json.gz",
+      "sha256": "f551abecfd54574c83021b7aff0c5c09f4b9a704e2816fdecf9910a544e235b1",
+      "bytes": 2743822
+    },
+    {
+      "file": "sz300949__60m.json.gz",
+      "sha256": "4fe6343ddb6c1b53c789680361a219d54ca6bfa3a4e21202fa5eccff7b91777a",
+      "bytes": 242982
+    },
+    {
+      "file": "sz300949__auction.json.gz",
+      "sha256": "19f34deef0b4472b12582e056b9192bf78cee9cbe0e0c560fd546e802e66f7fe",
+      "bytes": 180157
+    },
+    {
+      "file": "sz300949__day.json.gz",
+      "sha256": "7e391bd01bd6c6a66b287054d268b322b0afd65d0e174b42d264eebda85ceece",
+      "bytes": 185175
+    },
+    {
+      "file": "sz300949__five_days.json.gz",
+      "sha256": "6ad9a5af5d8de908a061495c67de58e72a77bfba6bef7d07f1773ebf5f3dd76b",
+      "bytes": 17966
+    },
+    {
+      "file": "sz300949__month.json.gz",
+      "sha256": "5851021b8e89c941efce3159a8602630a362ad34200a616599da61a1cc734078",
+      "bytes": 9190
+    },
+    {
+      "file": "sz300949__quarter.json.gz",
+      "sha256": "d45baedacf70f54a3f052078296a3b603965e7ea89a8af23806635476bb0a256",
+      "bytes": 4006
+    },
+    {
+      "file": "sz300949__timeshare.json.gz",
+      "sha256": "e929ee49a59381069950714ba3189945cd3ff08fe42b71d6d26c294b1f470c74",
+      "bytes": 4143
+    },
+    {
+      "file": "sz300949__timeshare_first.json.gz",
+      "sha256": "56404d9cf1b69c71b56203872aa9bfe8c6217b0e2443a27274f308483edb1aff",
+      "bytes": 4220
+    },
+    {
+      "file": "sz300949__week.json.gz",
+      "sha256": "9423ec26dc7fd280b58e88911a090855695edbbb331fa6ce0f711f9568381268",
+      "bytes": 38164
+    },
+    {
+      "file": "sz300949__year.json.gz",
+      "sha256": "ddefbcb83b992e6a37de13848fe3a8ef02df4d92deca0de1ecb18eb43e87e4ea",
+      "bytes": 1898
+    }
+  ]
+}

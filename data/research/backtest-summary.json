@@ -1,0 +1,620 @@
+[
+  {
+    "period": "day",
+    "bars": 1381,
+    "first": "2021-02-26T15:00:00+08:00",
+    "last": "2026-11-06T15:00:00+08:00",
+    "candidates_seen": 1,
+    "confirmed": 0,
+    "confirmed_by_class": {
+      "first_buy": 0,
+      "second_buy": 0,
+      "third_buy": 0,
+      "first_sell": 0,
+      "second_sell": 0,
+      "third_sell": 0
+    },
+    "confirmed_by_rank": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    "final_states": {
+      "candidate": 0,
+      "confirmed": 0,
+      "invalidated": 1,
+      "withdrawn": 0
+    },
+    "metrics": {
+      "completed_trades": 0,
+      "wins": 0,
+      "win_rate": null,
+      "profit_factor": null,
+      "ending_equity": 100000.0,
+      "total_return": 0.0,
+      "max_drawdown": 0,
+      "total_fees": 0,
+      "confirmed_signal_count": 0
+    },
+    "sensitivities": {
+      "base": {
+        "completed_trades": 0,
+        "wins": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "ending_equity": 100000.0,
+        "total_return": 0.0,
+        "max_drawdown": 0,
+        "total_fees": 0,
+        "confirmed_signal_count": 0
+      },
+      "one_bar_extra_latency": {
+        "completed_trades": 0,
+        "wins": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "ending_equity": 100000.0,
+        "total_return": 0.0,
+        "max_drawdown": 0,
+        "total_fees": 0,
+        "confirmed_signal_count": 0
+      },
+      "ten_bps_slippage": {
+        "completed_trades": 0,
+        "wins": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "ending_equity": 100000.0,
+        "total_return": 0.0,
+        "max_drawdown": 0,
+        "total_fees": 0,
+        "confirmed_signal_count": 0
+      }
+    },
+    "prefix_validation": [
+      {
+        "index": 0,
+        "closed_at": "2021-02-26T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 460,
+        "closed_at": "2023-01-16T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 920,
+        "closed_at": "2024-12-11T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 1380,
+        "closed_at": "2026-11-06T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      }
+    ],
+    "input_sha256": "6bc7855567c765b830fc1edfe919f4068614645ee3061bda61886cd753fc40e7",
+    "elapsed_seconds": 0.52,
+    "status": "complete"
+  },
+  {
+    "period": "60m",
+    "bars": 1960,
+    "first": "2024-10-31T10:30:00+08:00",
+    "last": "2026-11-06T15:00:00+08:00",
+    "candidates_seen": 3,
+    "confirmed": 0,
+    "confirmed_by_class": {
+      "first_buy": 0,
+      "second_buy": 0,
+      "third_buy": 0,
+      "first_sell": 0,
+      "second_sell": 0,
+      "third_sell": 0
+    },
+    "confirmed_by_rank": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    "final_states": {
+      "candidate": 0,
+      "confirmed": 0,
+      "invalidated": 2,
+      "withdrawn": 1
+    },
+    "metrics": {
+      "completed_trades": 0,
+      "wins": 0,
+      "win_rate": null,
+      "profit_factor": null,
+      "ending_equity": 100000.0,
+      "total_return": 0.0,
+      "max_drawdown": 0,
+      "total_fees": 0,
+      "confirmed_signal_count": 0
+    },
+    "sensitivities": {
+      "base": {
+        "completed_trades": 0,
+        "wins": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "ending_equity": 100000.0,
+        "total_return": 0.0,
+        "max_drawdown": 0,
+        "total_fees": 0,
+        "confirmed_signal_count": 0
+      },
+      "one_bar_extra_latency": {
+        "completed_trades": 0,
+        "wins": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "ending_equity": 100000.0,
+        "total_return": 0.0,
+        "max_drawdown": 0,
+        "total_fees": 0,
+        "confirmed_signal_count": 0
+      },
+      "ten_bps_slippage": {
+        "completed_trades": 0,
+        "wins": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "ending_equity": 100000.0,
+        "total_return": 0.0,
+        "max_drawdown": 0,
+        "total_fees": 0,
+        "confirmed_signal_count": 0
+      }
+    },
+    "prefix_validation": [
+      {
+        "index": 0,
+        "closed_at": "2024-10-31T10:30:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 653,
+        "closed_at": "2025-07-03T11:30:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 1306,
+        "closed_at": "2026-03-09T14:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 1959,
+        "closed_at": "2026-11-06T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      }
+    ],
+    "input_sha256": "aeddf19ad5cf9be0cb126e604124a4f05ec4288c42baff4d2155122303de204f",
+    "elapsed_seconds": 0.84,
+    "status": "complete"
+  },
+  {
+    "period": "30m",
+    "bars": 3920,
+    "first": "2024-10-31T10:00:00+08:00",
+    "last": "2026-11-06T15:00:00+08:00",
+    "candidates_seen": 8,
+    "confirmed": 1,
+    "confirmed_by_class": {
+      "first_buy": 0,
+      "second_buy": 0,
+      "third_buy": 1,
+      "first_sell": 0,
+      "second_sell": 0,
+      "third_sell": 0
+    },
+    "confirmed_by_rank": {
+      "1": 0,
+      "2": 1,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    "final_states": {
+      "candidate": 0,
+      "confirmed": 0,
+      "invalidated": 7,
+      "withdrawn": 1
+    },
+    "metrics": {
+      "completed_trades": 1,
+      "wins": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "ending_equity": 99977.32269999999,
+      "total_return": -0.00022677300000006895,
+      "max_drawdown": -0.0417550827940224,
+      "total_fees": 40.6773,
+      "confirmed_signal_count": 1
+    },
+    "sensitivities": {
+      "base": {
+        "completed_trades": 1,
+        "wins": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "ending_equity": 99977.32269999999,
+        "total_return": -0.00022677300000006895,
+        "max_drawdown": -0.0417550827940224,
+        "total_fees": 40.6773,
+        "confirmed_signal_count": 1
+      },
+      "one_bar_extra_latency": {
+        "completed_trades": 1,
+        "wins": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "ending_equity": 99411.10939,
+        "total_return": -0.005888906100000035,
+        "max_drawdown": -0.05104978377209479,
+        "total_fees": 49.89061,
+        "confirmed_signal_count": 1
+      },
+      "ten_bps_slippage": {
+        "completed_trades": 1,
+        "wins": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "ending_equity": 99941.33170000001,
+        "total_return": -0.0005866829999998657,
+        "max_drawdown": -0.04176242735902491,
+        "total_fees": 40.6683,
+        "confirmed_signal_count": 1
+      }
+    },
+    "prefix_validation": [
+      {
+        "index": 0,
+        "closed_at": "2024-10-31T10:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 1306,
+        "closed_at": "2025-07-03T11:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 2613,
+        "closed_at": "2026-03-09T14:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 3919,
+        "closed_at": "2026-11-06T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      }
+    ],
+    "input_sha256": "193c5346c2eeee91f5d7a9329a5c3a3df02a9c4337ede569fc21c58a472617b0",
+    "elapsed_seconds": 2.8,
+    "status": "complete"
+  },
+  {
+    "period": "15m",
+    "bars": 7840,
+    "first": "2024-10-31T09:45:00+08:00",
+    "last": "2026-11-06T15:00:00+08:00",
+    "candidates_seen": 12,
+    "confirmed": 1,
+    "confirmed_by_class": {
+      "first_buy": 0,
+      "second_buy": 0,
+      "third_buy": 1,
+      "first_sell": 0,
+      "second_sell": 0,
+      "third_sell": 0
+    },
+    "confirmed_by_rank": {
+      "1": 0,
+      "2": 1,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    "final_states": {
+      "candidate": 1,
+      "confirmed": 0,
+      "invalidated": 9,
+      "withdrawn": 2
+    },
+    "metrics": {
+      "completed_trades": 1,
+      "wins": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "ending_equity": 96758.60998,
+      "total_return": -0.03241390020000001,
+      "max_drawdown": -0.0398593921,
+      "total_fees": 51.39001999999999,
+      "confirmed_signal_count": 1
+    },
+    "sensitivities": {
+      "base": {
+        "completed_trades": 1,
+        "wins": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "ending_equity": 96758.60998,
+        "total_return": -0.03241390020000001,
+        "max_drawdown": -0.0398593921,
+        "total_fees": 51.39001999999999,
+        "confirmed_signal_count": 1
+      },
+      "one_bar_extra_latency": {
+        "completed_trades": 1,
+        "wins": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "ending_equity": 97163.3159,
+        "total_return": -0.028366840999999976,
+        "max_drawdown": -0.035135469999999946,
+        "total_fees": 46.6841,
+        "confirmed_signal_count": 1
+      },
+      "ten_bps_slippage": {
+        "completed_trades": 1,
+        "wins": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "ending_equity": 96714.62098,
+        "total_return": -0.0328537901999999,
+        "max_drawdown": -0.04007946029999987,
+        "total_fees": 51.37902,
+        "confirmed_signal_count": 1
+      }
+    },
+    "prefix_validation": [
+      {
+        "index": 0,
+        "closed_at": "2024-10-31T09:45:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 2613,
+        "closed_at": "2025-07-03T11:00:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 5226,
+        "closed_at": "2026-03-09T13:45:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 7839,
+        "closed_at": "2026-11-06T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      }
+    ],
+    "input_sha256": "12fc0168c6811b3228423a1e5aeb991979b1075ef6985adee6e35162b756bd54",
+    "elapsed_seconds": 14.17,
+    "status": "complete"
+  },
+  {
+    "period": "5m",
+    "bars": 23520,
+    "first": "2024-10-31T09:35:00+08:00",
+    "last": "2026-11-06T15:00:00+08:00",
+    "candidates_seen": 46,
+    "confirmed": 8,
+    "confirmed_by_class": {
+      "first_buy": 0,
+      "second_buy": 0,
+      "third_buy": 4,
+      "first_sell": 0,
+      "second_sell": 0,
+      "third_sell": 4
+    },
+    "confirmed_by_rank": {
+      "1": 0,
+      "2": 6,
+      "3": 2,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    "final_states": {
+      "candidate": 3,
+      "confirmed": 1,
+      "invalidated": 35,
+      "withdrawn": 7
+    },
+    "metrics": {
+      "completed_trades": 4,
+      "wins": 2,
+      "win_rate": 0.5,
+      "profit_factor": 1.0152579992807944,
+      "ending_equity": 100035.99019000001,
+      "total_return": 0.00035990190000001476,
+      "max_drawdown": -0.07793915844851762,
+      "total_fees": 115.00981,
+      "confirmed_signal_count": 8
+    },
+    "sensitivities": {
+      "base": {
+        "completed_trades": 4,
+        "wins": 2,
+        "win_rate": 0.5,
+        "profit_factor": 1.0152579992807944,
+        "ending_equity": 100035.99019000001,
+        "total_return": 0.00035990190000001476,
+        "max_drawdown": -0.07793915844851762,
+        "total_fees": 115.00981,
+        "confirmed_signal_count": 8
+      },
+      "one_bar_extra_latency": {
+        "completed_trades": 4,
+        "wins": 2,
+        "win_rate": 0.5,
+        "profit_factor": 1.2724009484949304,
+        "ending_equity": 100709.92920000003,
+        "total_return": 0.007099292000000368,
+        "max_drawdown": -0.09086254598364218,
+        "total_fees": 130.0708,
+        "confirmed_signal_count": 8
+      },
+      "ten_bps_slippage": {
+        "completed_trades": 4,
+        "wins": 2,
+        "win_rate": 0.5,
+        "profit_factor": 0.9800931943574207,
+        "ending_equity": 99952.00938999999,
+        "total_return": -0.0004799061000000382,
+        "max_drawdown": -0.0783893861385283,
+        "total_fees": 114.99060999999999,
+        "confirmed_signal_count": 8
+      }
+    },
+    "prefix_validation": [
+      {
+        "index": 0,
+        "closed_at": "2024-10-31T09:35:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 7840,
+        "closed_at": "2025-07-03T10:55:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 15680,
+        "closed_at": "2026-03-09T13:45:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 23519,
+        "closed_at": "2026-11-06T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      }
+    ],
+    "input_sha256": "3db0622e29dd1652e3663a9c55264721b3f417f8afd16df1e94ea2968df6771a",
+    "elapsed_seconds": 147.11,
+    "status": "complete"
+  },
+  {
+    "period": "1m",
+    "bars": 22560,
+    "first": "2026-06-22T09:31:00+08:00",
+    "last": "2026-11-06T15:00:00+08:00",
+    "candidates_seen": 41,
+    "confirmed": 9,
+    "confirmed_by_class": {
+      "first_buy": 0,
+      "second_buy": 0,
+      "third_buy": 6,
+      "first_sell": 0,
+      "second_sell": 0,
+      "third_sell": 3
+    },
+    "confirmed_by_rank": {
+      "1": 0,
+      "2": 8,
+      "3": 1,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0
+    },
+    "final_states": {
+      "candidate": 7,
+      "confirmed": 2,
+      "invalidated": 28,
+      "withdrawn": 4
+    },
+    "metrics": {
+      "completed_trades": 3,
+      "wins": 2,
+      "win_rate": 0.6666666666666666,
+      "profit_factor": 0.2742565463829275,
+      "ending_equity": 100899.96415000001,
+      "total_return": 0.00899964150000021,
+      "max_drawdown": -0.00906774224577167,
+      "total_fees": 46.03585,
+      "confirmed_signal_count": 9
+    },
+    "sensitivities": {
+      "base": {
+        "completed_trades": 3,
+        "wins": 2,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 0.2742565463829275,
+        "ending_equity": 100899.96415000001,
+        "total_return": 0.00899964150000021,
+        "max_drawdown": -0.00906774224577167,
+        "total_fees": 46.03585,
+        "confirmed_signal_count": 9
+      },
+      "one_bar_extra_latency": {
+        "completed_trades": 2,
+        "wins": 1,
+        "win_rate": 0.5,
+        "profit_factor": 0.19074565826172654,
+        "ending_equity": 100646.01299,
+        "total_return": 0.0064601299,
+        "max_drawdown": -0.012064240602776555,
+        "total_fees": 35.98701,
+        "confirmed_signal_count": 9
+      },
+      "ten_bps_slippage": {
+        "completed_trades": 3,
+        "wins": 2,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 0.26560565640269806,
+        "ending_equity": 100884.9666,
+        "total_return": 0.008849665999999923,
+        "max_drawdown": -0.009108334016949993,
+        "total_fees": 46.03340000000001,
+        "confirmed_signal_count": 9
+      }
+    },
+    "prefix_validation": [
+      {
+        "index": 0,
+        "closed_at": "2026-06-22T09:31:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 7520,
+        "closed_at": "2026-08-04T10:51:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 15040,
+        "closed_at": "2026-09-16T13:41:00+08:00",
+        "batch_prefix_equivalent": true
+      },
+      {
+        "index": 22559,
+        "closed_at": "2026-11-06T15:00:00+08:00",
+        "batch_prefix_equivalent": true
+      }
+    ],
+    "input_sha256": "7cb2377f5bf6f2e26a945141d23328d3ef2876177451f8ba1de6ec29b0d0a31a",
+    "elapsed_seconds": 140.12,
+    "status": "complete"
+  }
+]

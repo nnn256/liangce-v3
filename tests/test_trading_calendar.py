@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys, os
-os.chdir(r'D:\股票看盘\scripts')
-sys.path.insert(0, r'D:\股票看盘\scripts')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import trading_calendar as tc
 
 # 用假的交易日历注入，验证纯逻辑

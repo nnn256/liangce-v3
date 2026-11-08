@@ -1,3 +1,14 @@
+# 量测 v3 · 缠论结构研究工作台
+
+量测v3在原stock-dashboard行情接口上新增浅色响应式研究前端：全部分型、笔与线段、各秩中枢、双ABCD、确认依据、因果回放与历史回测。默认主页为研究工作区，`?terminal=1`保留原版行情终端。
+
+- 电脑、平板、手机自适应；图表缩放/拖动、图层开关、点选证据、特征序列、震荡监视器、走势分解、PNG/JSON/CSV导出。
+- 随项目附带奥雅股份15周期已核验历史数据，实际截至2026-11-06；原价与因果后复权分析价分列。公开Pages可以独立读图，FastAPI后端提供新取数和历史截止计算。
+- 本地启动：`./start-liangce.ps1`；默认`http://127.0.0.1:8810`。完整安装、GitHub Pages和后端容器部署见[部署说明](docs/LIANGCE-DEPLOY.md)。
+- 研究接口文档：运行后访问`/docs`；健康检查`/api/research/health`。首次确认来自逐根前缀证据，后续失效仍保留；不把分型直接当成买点。
+
+本项目基于[lllaaa999/stock-dashboard](https://github.com/lllaaa999/stock-dashboard)扩展，保留MIT许可及原接口。以下为上游原始功能说明。
+
 # 股票综合看盘系统 · 七层雷达
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

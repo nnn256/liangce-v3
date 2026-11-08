@@ -1,0 +1,4 @@
+-r requirements.txt
+httpx>=0.25.0
+pytest>=8.0.0
+scipy>=1.11.0

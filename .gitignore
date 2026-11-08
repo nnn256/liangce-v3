@@ -99,3 +99,13 @@ scratch/index_backup*.html
 .team/
 .workbuddy-ai/
 scratch/
+
+# Liangce local-only runtime, credentials, reference attachments and QA outputs
+.runtime/
+.env
+.env.*
+!.env.example
+docs/reference/
+artifacts/
+*.bundle
+frontend/.env.local
