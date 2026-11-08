@@ -10,11 +10,12 @@ export function defaultBackend(){
 export function backend(){return (localStorage.getItem('liangce.api')?.trim()||defaultBackend()).replace(/\/+$/,'')}
 export function token(){return sessionStorage.getItem('liangce.token')||''}
 export function publicStatic(){return location.hostname.endsWith('.github.io')||new URLSearchParams(location.search).get('static')==='1'}
+export class ApiError extends Error {constructor(message:string,public status:number){super(message)}}
 export async function request<T=any>(path:string,options:RequestInit={},signal?:AbortSignal,timeoutMs=12000):Promise<T>{
  if(publicStatic()&&!backend())throw new Error('公开网页使用已核验归档；新计算请在连接设置中填写后端地址');
  const timeout=AbortSignal.timeout(timeoutMs),bounded=signal?AbortSignal.any([signal,timeout]):timeout;
  const response=await fetch(backend()+path,{...options,signal:bounded,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(token()?{Authorization:'Bearer '+token()}:{}),...options.headers}});
- if(!response.ok){let message='请求失败 '+response.status;try{const b=await response.json();message=typeof b.detail==='string'?b.detail:JSON.stringify(b.detail||b.message||b)}catch{}throw new Error(message)}
+ if(!response.ok){let message='请求失败 '+response.status;try{const b=await response.json();message=typeof b.detail==='string'?b.detail:JSON.stringify(b.detail||b.message||b)}catch{}throw new ApiError(message,response.status)}
  const type=response.headers.get('content-type')||'';if(!type.includes('json'))throw new Error('当前网址未连接研究后端');return response.json();
 }
 export async function wakeBackend(signal?:AbortSignal){
@@ -43,11 +44,33 @@ export async function archivedPanel(symbol:string,period:string,signal?:AbortSig
  if(sha!==entry.sha256)throw Error('研究数据完整性检查失败，请刷新网页');
  const stream=new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'));return JSON.parse(await new Response(stream).text());
 }
+async function automaticPanel(symbol:string,period:string,signal:AbortSignal){
+ if(!['day','5m','15m','30m','60m','week','month'].includes(period))throw new Error('该股票此周期暂无归档，上游尚未提供可直接计算的原生数据');
+ const job=await request('/api/research/jobs',{method:'POST',body:JSON.stringify({symbol,period,source:'live',mode:'analysis'})},signal,20000);
+ const deadline=Date.now()+180000;
+ while(Date.now()<deadline){
+  signal.throwIfAborted();
+  const state=await request('/api/research/jobs/'+job.id,{},signal);
+  if(state.state==='failed')throw new Error(state.error||'自动取数失败');
+  if(state.state==='completed')return {panel:await request<Panel>(state.result_url,{},signal,90000),mode:'api' as const,notice:'已自动获取行情并计算结构 · 原生数据口径见来源说明'};
+  await new Promise<void>((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(signal.reason)};const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve()},1500);signal.addEventListener('abort',abort,{once:true})});
+ }
+ throw new Error('自动取数仍在运行，请稍后重新打开该股票');
+}
 export async function loadPanel(symbol:string,period:string,signal:AbortSignal):Promise<{panel:Panel;mode:'api'|'archive';notice?:string}>{
  if(publicStatic()&&!backend())return {panel:await archivedPanel(symbol,period,signal),mode:'archive',notice:'公开历史归档 · 新计算需要连接后端'};
  // Full intraday evidence can take longer than small control requests to download.
- try{return {panel:await request('/api/research/panel/'+symbol+'/'+period,{},signal,90000),mode:'api'}}
- catch(e){if(signal.aborted)throw e;const panel=await archivedPanel(symbol,period,signal);return {panel,mode:'archive',notice:backend()?'后端暂不可用，当前显示已核验历史归档':'公开历史归档 · 新计算需要连接后端'}}
+ try{
+  const panel=await request<Panel>('/api/research/panel/'+symbol+'/'+period,{},signal,90000);
+  if(panel.source_kind!=='verified_historical_snapshot'&&Date.now()-Date.parse(panel.computed_at||'')>300000)return await automaticPanel(symbol,period,signal);
+  return {panel,mode:'api'};
+ }
+ catch(e){
+  if(signal.aborted)throw e;
+  if(e instanceof ApiError&&e.status===404&&symbol!=='sz300949')return automaticPanel(symbol,period,signal);
+  if(symbol!=='sz300949')throw e;
+  const panel=await archivedPanel(symbol,period,signal);return {panel,mode:'archive',notice:backend()?'后端暂不可用，当前显示已核验历史归档':'公开历史归档 · 新计算需要连接后端'};
+ }
 }
 export async function searchSymbols(q:string,signal:AbortSignal):Promise<Stock[]>{
  try{return (await request('/api/research/symbols?q='+encodeURIComponent(q),{},signal)).results}

@@ -175,6 +175,7 @@ def _fetch_quotes_via_fallback(symbols: List[str]) -> Dict[str, Any]:
                 'phase': phase,
                 'orderBook': {'bids': bids, 'asks': asks},
                 'recentTrades': [],
+                'quoteTime': q.get('quote_time') or q.get('datetime'),
                 'updatedAt': now_ms,
             }
         except Exception:
@@ -311,6 +312,7 @@ def fetch_level1_quotes(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
                 'phase': phase,
                 'orderBook': {'bids': bids, 'asks': asks},
                 'recentTrades': [],
+                'quoteTime': parts[30] if len(parts) > 30 else None,
                 'updatedAt': now_ms,
             }
         except Exception:

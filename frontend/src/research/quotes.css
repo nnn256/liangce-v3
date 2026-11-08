@@ -1,0 +1,7 @@
+.lc-list-heading .lc-quote-refresh{margin-left:auto;display:flex;padding:3px;background:none;border:0;color:#7899b3}
+.lc-stock-value em{display:block;font-size:8px;font-style:normal;color:#a18b64;margin-top:3px}
+.lc-quote-status{align-items:flex-start;line-height:1.7}
+.lc-quote-status small{display:block;font-size:8px;color:#91a4b3;margin-top:4px}
+.lc-main-quote .lc-main-change{display:block;font-size:13px;font-weight:500;margin-top:4px}
+.lc-main-quote>small{display:block;font-size:9px;margin-top:7px;color:#91a4b3}
+.lc-release{display:block;font-size:9px;margin-top:8px;color:#91a4b3}

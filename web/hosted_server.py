@@ -30,6 +30,8 @@ async def security_headers(request,call_next):
     response=await call_next(request)
     response.headers['X-Content-Type-Options']='nosniff'
     response.headers['Referrer-Policy']='strict-origin-when-cross-origin'
+    if request.url.path in {'/','/index.html','/sw.js'}:
+        response.headers['Cache-Control']='no-cache, must-revalidate'
     return response
 
 

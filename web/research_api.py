@@ -1,9 +1,10 @@
 """Liangce research API: evidence-preserving snapshots and bounded compute jobs."""
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
+from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache
-import gzip, hashlib, json, os, re, threading, time, uuid
+import gzip, hashlib, json, math, os, re, threading, time, uuid
 from pathlib import Path
 from typing import Literal
 from fastapi import APIRouter, HTTPException, Request
@@ -126,6 +127,69 @@ def quote(code:str):
     if not data:raise HTTPException(503,'行情源暂不可用；已有研究快照不受影响')
     return {'quote':data,'source':'stock-dashboard/market_gateway','received_at':datetime.now(CN).isoformat(),
             'meaning':'行情报价与研究快照分别显示；刷新报价不改变历史确认'}
+
+
+quote_cache=OrderedDict()
+quote_lock=threading.Lock()
+
+
+def quote_session(now):
+    minute=now.hour*60+now.minute
+    return now.weekday()<5 and (555<=minute<=690 or 780<=minute<=900)
+
+
+def normalized_quote(code,data,received_at):
+    def number(key):
+        try:value=float(data[key])
+        except (KeyError,ValueError,TypeError):return None
+        return value if math.isfinite(value) else None
+    price=number('price');previous=number('prevClose')
+    if price is None or price<=0:return None
+    change=round(price-previous,3) if previous and previous>0 else None
+    pct=number('changePercent') if change is not None else None
+    if pct is None and change is not None:pct=round(change/previous*100,4)
+    stamp=data.get('quoteTime');market_time=None
+    if stamp:
+        try:
+            text=str(stamp)
+            parsed=datetime.strptime(text,'%Y%m%d%H%M%S') if re.fullmatch(r'\d{14}',text) else datetime.fromisoformat(text)
+            market_time=parsed.replace(tzinfo=CN).isoformat() if parsed.tzinfo is None else parsed.astimezone(CN).isoformat()
+        except ValueError:pass
+    return {'symbol':code,'name':data.get('name') or code,'price':price,'previous_close':previous,
+            'change':change,'change_percent':pct,'market_time':market_time,'received_at':received_at,
+            'source':'stock-dashboard/market_gateway','stale':False}
+
+
+@router.get('/quotes')
+def quotes(symbols:str):
+    parts=symbols.split(',')
+    if not 1<=len(parts)<=80 or len(symbols)>1200:raise HTTPException(422,'每次最多查询80只股票')
+    try:codes=list(dict.fromkeys(symbol(x) for x in parts))
+    except ValueError as error:raise HTTPException(422,str(error))
+    now=datetime.now(CN);active=quote_session(now);ttl=15 if active else 300
+    failure=None
+    # Serialize cache misses so concurrent visitors share one upstream batch.
+    with quote_lock:
+        missing=[code for code in codes if code not in quote_cache or time.monotonic()-quote_cache[code][0]>=ttl]
+        if missing:
+            import market_gateway as mg
+            try:raw=mg.fetch_level1_quotes([code[2:]+'.'+code[:2].upper() for code in missing])
+            except Exception:raw={}
+            received=datetime.now(CN).isoformat()
+            for code in missing:
+                data=raw.get(code[2:]+'.'+code[:2].upper())
+                item=normalized_quote(code,data,received) if data else None
+                if item:
+                    quote_cache[code]=(time.monotonic(),item);quote_cache.move_to_end(code)
+            while len(quote_cache)>500:quote_cache.popitem(last=False)
+            if any(code not in quote_cache or time.monotonic()-quote_cache[code][0]>=ttl for code in missing):
+                failure='部分行情源暂不可用；已有报价保留并标记为上次数据'
+        results={code:{**quote_cache[code][1],'stale':time.monotonic()-quote_cache[code][0]>=ttl} for code in codes if code in quote_cache}
+    if not results:raise HTTPException(503,'行情源暂不可用，请稍后重试；未使用演示报价')
+    return {'quotes':results,'missing':[code for code in codes if code not in results],
+            'market_session':'trading_hours' if active else 'outside_trading_hours',
+            'refresh_after_seconds':20 if active else 300,'error':failure,
+            'received_at':datetime.now(CN).isoformat(),'meaning':'休市保留最近交易报价；报价时间与结构快照时间分别记录'}
 
 
 class JobRequest(BaseModel):

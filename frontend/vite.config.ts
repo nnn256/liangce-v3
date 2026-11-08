@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import path from 'path';
+import {execFileSync} from 'node:child_process';
 import {defineConfig, type Plugin} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
@@ -54,13 +55,17 @@ function syncWebDistPlugin(): Plugin {
 }
 
 export default defineConfig(() => {
+  let revision=process.env.GITHUB_SHA?.slice(0,7)||'local';
+  if(revision==='local')try{revision=execFileSync('git',['rev-parse','--short','HEAD'],{encoding:'utf8'}).trim()}catch{}
   return {
+    define: {'import.meta.env.VITE_APP_REVISION': JSON.stringify(revision)},
     base: process.env.VITE_BASE || '/',
     plugins: [
       react(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: null,
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
         manifest: {
           id: './',
