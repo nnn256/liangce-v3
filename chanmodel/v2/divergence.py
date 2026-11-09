@@ -111,3 +111,24 @@ def make_signals(units,centers,comparisons,bars,rank,histogram=None):
             retest_mode='held_first_extreme' if survived else 'weak_retest_101',weak_retest_evidence=weak_retest,
             reference=[17,53,101])
     return signals
+
+
+def anchor_signals_to_extremes(points,bars):
+    """Use the actual price extreme while keeping stable decomposition IDs.
+
+    Lesson 53 separates the type's endpoint from its internal extreme. The
+    batch/local-compute path must use the same anchors as causal replay.
+    """
+    for point in points:
+        start,end=point['terminal_range']
+        if not 0<=start<=end<len(bars):raise ValueError('Signal terminal range outside known candles')
+        pivot=(min if point['side']=='buy' else max)(bars[start:end+1],key=lambda bar:bar.low if point['side']=='buy' else bar.high)
+        point['decomposition_end']=point.get('decomposition_end',point['anchor'])
+        point['anchor']=pivot.pos;point['price']=pivot.low if point['side']=='buy' else pivot.high
+        point['identity_semantics']='stable decomposition identity; actual price anchor stored separately'
+        point['extreme_evidence']={'range':[start,end],'source_index':pivot.pos,'price':point['price'],
+                                   'kind':'lowest_low' if point['side']=='buy' else 'highest_high','references':[21,53]}
+        if not point['class'].startswith('third_'):point['invalidation']=point['price']
+        broken=any(bar.low<=point['invalidation'] if point['side']=='buy' else bar.high>=point['invalidation'] for bar in bars[pivot.pos+1:])
+        point['state']='invalidated' if broken else 'awaiting_lower_confirmation'
+    return points

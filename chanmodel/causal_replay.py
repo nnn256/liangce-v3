@@ -15,7 +15,7 @@ from .structure import contains, local_direction, merge_pair, fractals_at, strok
 from .segments import build_segments
 from .signals import attach_ranges
 from .v2.recursive import base_units, build_hierarchy, audit_hierarchy
-from .v2.divergence import compare_divergences, make_signals
+from .v2.divergence import compare_divergences, make_signals, anchor_signals_to_extremes
 
 CONFIG=Config(stroke_mode='strict',macd_multiplier=2.0,second_policy='conservative')
 PROFILE='original_clause_gated_causal_confirmation_v1'
@@ -84,20 +84,7 @@ class StreamingStructure:
         for layer in hierarchy['levels']:
             comp=compare_divergences(children,layer['centers'],self.bars,self.histogram,layer['rank'],now)
             signals=make_signals(children,layer['centers'],comp,self.bars,layer['rank'],self.histogram)
-            # Lesson 53 distinguishes a type's decomposition endpoint from
-            # its internal price extreme. Buy/sell anchors use the actual
-            # extremum; completion remains at the later witnessed boundary.
-            for point in signals:
-                start,end=point['terminal_range'];part=self.bars[start:end+1]
-                pivot=(min if point['side']=='buy' else max)(part,key=lambda b:b.low if point['side']=='buy' else b.high)
-                old_anchor=point['anchor'];point['decomposition_end']=old_anchor
-                point['anchor']=pivot.pos;point['price']=pivot.low if point['side']=='buy' else pivot.high
-                point['identity_semantics']='stable decomposition identity; actual price anchor stored separately'
-                point['extreme_evidence']={'range':[start,end],'source_index':pivot.pos,'price':point['price'],
-                                           'kind':'lowest_low' if point['side']=='buy' else 'highest_high','references':[21,53]}
-                if not point['class'].startswith('third_'):point['invalidation']=point['price']
-                broken=any(b.low<=point['invalidation'] if point['side']=='buy' else b.high>=point['invalidation'] for b in self.bars[pivot.pos+1:])
-                point['state']='invalidated' if broken else 'awaiting_lower_confirmation'
+            anchor_signals_to_extremes(signals,self.bars)
             layer.update(comparisons=comp,signals=signals)
             comparisons+=comp;points+=signals;children=layer['completed_types']
         return {'base':{'merged':self.merged,'fractals':self.fractals,'strokes':self.strokes,'segments':self.segments},

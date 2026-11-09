@@ -1,0 +1,19 @@
+import {strict as assert} from 'node:assert';
+import {readFileSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
+import {displaySignals,signalStatus} from './signalDisplay';
+
+const panel=JSON.parse(gunzipSync(readFileSync(new URL('../../public/research/sz300949__5m.json.gz',import.meta.url))).toString());
+const signals=displaySignals(panel);
+assert.equal(new Set(signals.map(point=>point.id)).size,signals.length);
+assert.equal(signals.filter(point=>point.has_confirmation).length,8);
+assert.equal(signals.filter(point=>point.class==='first_buy').length,1);
+assert.equal(signals.filter(point=>point.class==='second_buy').length,0);
+assert.equal(signals.filter(point=>point.class==='second_sell').length,1);
+assert(signals.length>panel.signals.length,'Keep historical objects absent from the final structure');
+const first=signals.find(point=>point.class==='first_buy')!;
+assert.equal(signalStatus(first),'候选 · 已失效');
+const confirmed=signals.find(point=>point.has_confirmation&&point.state==='invalidated')!;
+assert.equal(signalStatus(confirmed),'历史确认 · 已失效');
+assert(confirmed.confirmed_index>confirmed.anchor,'Price anchors must not be confused with the time confirmation became known');
+console.log('Real archive: historical signal reconciliation, confirmation timing and six-class counts passed.');

@@ -2,12 +2,16 @@ import type {Panel,Stock} from './types';
 const BASE=import.meta.env.BASE_URL;
 const PUBLIC_BACKEND='https://liangce-v3-api-production.up.railway.app';
 export function defaultBackend(){
+ if(['localhost','127.0.0.1','[::1]'].includes(location.hostname))return location.origin;
  const configured=import.meta.env.VITE_API_BASE?.trim();
  if(configured)return configured.replace(/\/+$/,'');
  if(location.hostname==='nnn256.github.io')return PUBLIC_BACKEND;
  return publicStatic()?'':location.origin;
 }
-export function backend(){return (localStorage.getItem('liangce.api')?.trim()||defaultBackend()).replace(/\/+$/,'')}
+export function backend(){
+ if(['localhost','127.0.0.1','[::1]'].includes(location.hostname))return location.origin;
+ return (localStorage.getItem('liangce.api')?.trim()||defaultBackend()).replace(/\/+$/,'');
+}
 export function token(){return sessionStorage.getItem('liangce.token')||''}
 export function publicStatic(){return location.hostname.endsWith('.github.io')||new URLSearchParams(location.search).get('static')==='1'}
 export class ApiError extends Error {constructor(message:string,public status:number){super(message)}}

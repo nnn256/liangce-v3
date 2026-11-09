@@ -2,6 +2,7 @@ import React,{forwardRef,useEffect,useImperativeHandle,useRef,useState} from 're
 import {createChart,CandlestickSeries,LineSeries,HistogramSeries,ColorType,type IChartApi} from 'lightweight-charts';
 import type {Evidence,Layer,Panel} from './types';
 import {CLASSES,fmt} from './types';
+import {signalStatus} from './signalDisplay';
 
 export interface ChartActions {fit:()=>void;recent:()=>void;zoom:(direction:number)=>void;exportPNG:()=>Promise<void>}
 interface Props {panel:Panel;layers:Set<Layer>;onEvidence:(x:Evidence)=>void;focus:Evidence|null;fullScreen:boolean}
@@ -13,7 +14,7 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
  const [original,setOriginal]=useState(''),[rank,setRank]=useState(0);
  const line=p.kind==='line',bars:any[]=line?(p.points||[]):(p.bars||[]);
  const originals=(p.abcd||[]).filter((x:any)=>x.mode==='a+A+b+B+c_then_d');
- const stateLabel=(s:any)=>s==='invalidated'?'×':s==='confirmed'?'确认':'?';
+ const points=p.display_signals||p.signals||[];
  useEffect(()=>{setOriginal(originals.at(-1)?.id||'');setRank(0)},[p]);
  useEffect(()=>{
   if(!mainEl.current||!volEl.current||!macdEl.current||!bars.length)return;
@@ -30,12 +31,15 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
   charts.forEach(c=>c.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(!r||sync)return;sync=true;charts.filter(o=>o!==c).forEach(o=>o.timeScale().setVisibleLogicalRange(r));sync=false;update()}));
   main.subscribeCrosshairMove(param=>{const found=param.seriesData.get(price) as any;setHover(found?{...found,date:typeof param.time==='number'?new Date(param.time*1000).toISOString().replace('T',' ').slice(0,16):''}:null)});
   const resize=new ResizeObserver(()=>{for(const [i,el]of [mainEl.current,volEl.current,macdEl.current].entries()){if(el)charts[i].resize(el.clientWidth,el.clientHeight)}update()});[mainEl.current,volEl.current,macdEl.current].forEach(x=>x&&resize.observe(x));
-  const recent=()=>main.timeScale().setVisibleLogicalRange({from:Math.max(-1,bars.length-(window.innerWidth<600?90:220)),to:bars.length+6});recent();
+  const recent=()=>main.timeScale().setVisibleLogicalRange({from:Math.max(-1,bars.length-(window.innerWidth<600?90:220)),to:bars.length+6});
+  const latest=points.at(-1);
+  if(!line&&latest&&layers.has('signals'))main.timeScale().setVisibleLogicalRange({from:Math.max(-1,latest.anchor-100),to:Math.min(bars.length+6,latest.anchor+100)});
+  else recent();
   handles.current={charts,main,price,recent,update};update();
   return()=>{disposed=true;cancelAnimationFrame(raf);resize.disconnect();charts.forEach(c=>c.remove());handles.current=null;setGeometry(null)};
  },[p]);
  useEffect(()=>{handles.current?.update()},[layers,original,rank,fullScreen]);
- useEffect(()=>{if(!focus||!handles.current)return;const anchor=focus.observed_index??focus.anchor??focus.source??focus.end??0;const start=focus.point?.terminal_range?.[0]??focus.start??Math.max(0,anchor-90);const end=Math.max(anchor,focus.available_at??anchor);handles.current.main.timeScale().setVisibleLogicalRange({from:Math.max(-1,start-25),to:Math.min(bars.length+6,end+35)})},[focus]);
+ useEffect(()=>{if(!focus||!handles.current)return;setHover(null);const anchor=focus.anchor??focus.observed_index??focus.source??focus.end??0;const end=focus.event==='confirmed'?Math.max(anchor,focus.observed_index):anchor;const start=CLASSES[focus.class]?Math.max(0,anchor-80):focus.point?.terminal_range?.[0]??focus.start??Math.max(0,anchor-90);handles.current.main.timeScale().setVisibleLogicalRange({from:Math.max(-1,start-25),to:Math.min(bars.length+6,end+70)});handles.current.update()},[focus]);
  useImperativeHandle(ref,()=>({fit:()=>handles.current?.main.timeScale().fitContent(),recent:()=>handles.current?.recent(),zoom:(d)=>{const s=handles.current?.main.timeScale(),r=s?.getVisibleLogicalRange();if(r){const length=(r.to-r.from)*(d>0?.7:1.4);s.setVisibleLogicalRange({from:r.to-length,to:r.to})}},exportPNG:async()=>{
    const h=handles.current;if(!h)return;const chart=h.main.takeScreenshot();const svg=svgEl.current;const result=document.createElement('canvas');result.width=chart.width;result.height=chart.height+94;const ctx=result.getContext('2d')!;ctx.fillStyle='#fff';ctx.fillRect(0,0,result.width,result.height);ctx.fillStyle='#24384d';ctx.font='600 20px system-ui';ctx.fillText(`${p.name} ${p.symbol} · ${p.label}`,20,30);ctx.font='12px system-ui';ctx.fillStyle='#687e93';ctx.fillText(`数据截至 ${p.data_as_of||p.coverage.last} · ${p.adjustment_note||p.coverage.source}`,20,53);ctx.drawImage(chart,0,70);
    if(svg){const copy=svg.cloneNode(true) as SVGSVGElement;copy.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});const url=URL.createObjectURL(blob);const img=new Image();await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=()=>reject(Error('图层导出失败'));img.src=url});ctx.drawImage(img,0,70);URL.revokeObjectURL(url)}
@@ -50,13 +54,28 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
   if(layers.has('strokes'))for(const s of p.strokes||[])path(s,'#9aaec1',1.1,s.state==='confirmed'?undefined:'3 3');
   if(layers.has('segments'))for(const s of p.segments||[]){path(s,s.state==='confirmed'?'#3774ab':'#be872e',2.5,s.state==='confirmed'?undefined:'7 5');if(spot(s.end))shapes.push(txt(x(s.end)+6,y(s.end_price)+(s.direction==='up'?-12:18),fmt(s.end_price),s.state==='confirmed'?'#3774ab':'#be872e'))}
   if(layers.has('fractals'))for(const f of p.fractals||[]){if(!spot(f.source))continue;const xx=x(f.source),yy=y(f.price)+(f.kind==='top'?-8:8),top=f.kind==='top';if(!coords([xx,yy]))continue;shapes.push(<path key={'f'+id++} d={top?`M ${xx-3} ${yy-3} L ${xx+3} ${yy-3} L ${xx} ${yy+3} Z`:`M ${xx-3} ${yy+3} L ${xx+3} ${yy+3} L ${xx} ${yy-3} Z`} fill={top?'#bc6c77':'#388e7d'} onClick={()=>onEvidence({...f,type:'分型',confirmation:'由右侧K线提供证据；不是独立买卖点'})}><title>{top?'顶分型':'底分型'} {fmt(f.price)}</title></path>)}
-  let lane=0;if(layers.has('signals'))for(const s of p.signals||[]){if(!spot(s.anchor))continue;const xx=x(s.anchor),yy=y(s.price),color=s.state==='invalidated'?'#94a0af':s.side==='buy'?'#bf5665':'#32957f';if(!coords([xx,yy]))continue;shapes.push(<circle key={'s'+id++} cx={xx} cy={yy} r="3.5" stroke={color} fill="white" onClick={()=>onEvidence(s)}/>);shapes.push(txt(xx+6,yy+(s.side==='buy'?28:-26)+(lane++%2)*10,`${CLASSES[s.class]||s.class} L${s.rank}${stateLabel(s.state)}`,color,10))}
+  let lane=0;if(layers.has('signals'))for(const s of points){
+   if(!spot(s.anchor))continue;
+   const xx=x(s.anchor),yy=y(s.price),color=s.side==='buy'?'#b44461':'#267f82';if(!coords([xx,yy]))continue;
+   const ended=s.state==='invalidated'||s.state==='withdrawn',selected=focus?.id===s.id;
+   const label=`${CLASSES[s.class]} L${s.rank} ${s.has_confirmation?'历史确认':'候选'}${ended?'·'+(s.state==='invalidated'?'失效':'撤回'):''}`;
+   const width=Math.min(pw-8,Math.max(90,label.length*7.2)),left=Math.max(4,Math.min(pw-width-4,xx-width/2));
+   const top=Math.max(8,Math.min(height-27,yy+(s.side==='buy'?24+(lane%3)*22:-42-(lane%3)*22)));lane++;
+   shapes.push(<g key={'s'+id++} data-signal-class={s.class} data-signal-id={s.id} data-signal-status={signalStatus(s)} role="button" aria-label={`${label} ${fmt(s.price)}`} tabIndex={0} onClick={()=>onEvidence(s)} onKeyDown={e=>{if(e.key==='Enter')onEvidence(s)}} style={{cursor:'pointer'}}>
+    <title>{`${CLASSES[s.class]} · ${signalStatus(s)} · ${s.anchor_time||s.event_time||''} · ${fmt(s.price)}`}</title>
+    <line x1={xx} y1={yy} x2={Math.max(left+4,Math.min(left+width-4,xx))} y2={s.side==='buy'?top:top+20} stroke={color} strokeWidth={selected?2:1} strokeDasharray={ended?'3 3':undefined}/>
+    <circle cx={xx} cy={yy} r={selected?5:3.5} stroke={color} strokeWidth={selected?2:1.3} fill="white"/>
+    <rect x={left} y={top} width={width} height={20} rx={4} fill={selected?'#fff2dc':'white'} stroke={color} strokeWidth={selected?2:1} strokeDasharray={ended?'3 2':undefined}/>
+    <text x={left+6} y={top+14} fill={color} fontSize={10} fontFamily="system-ui,Microsoft YaHei">{label}</text>
+   </g>);
+  }
   if(layers.has('abcd'))for(const group of p.abcd||[]){if(group.mode!=='four_consecutive_same_rank'||group.rank!==rank||!inView(group))continue;for(const s of group.letters){path(s,['#5c82b1','#a17b47','#9b6aa5','#3d9b8d']['abcd'.indexOf(s.label)],1.5,'4 3');if(inView(s))shapes.push(txt((Math.max(0,x(s.start))+Math.min(pw,x(s.end)))/2,(y(s.start_price)+y(s.end_price))/2-15,`${s.label} · L${rank}`,'#587e9f',13))}}
   if(layers.has('original')){const g=originals.find((g:any)=>g.id===original);if(g)for(const s of g.letters){if(!inView(s))continue;const color=s.label==='A'?'#2c9b89':s.label==='B'?'#9273b1':s.label==='c'?'#b55d94':s.label==='d'?'#c39132':'#347bb7';if(s.object_kind==='center'){shapes.push(txt(x(s.start)+10,y(s.zg)-22,`${s.label} 中枢`,color,15))}else{path(s,color,3);shapes.push(txt((Math.max(0,x(s.start))+Math.min(pw,x(s.end)))/2,(y(s.start_price)+y(s.end_price))/2-28,s.label+(s.label==='d'?' 后续段':''),color,17))}}}
-  if(layers.has('confirmed'))for(const e of p.confirmations||[]){if(!spot(e.observed_index))continue;const xx=x(e.observed_index),bar=bars[e.observed_index],yy=y(bar?.close||e.price),color=e.side==='buy'?'#b44461':'#267f82';if(!coords([xx,yy]))continue;shapes.push(<path key={'cf'+id++} d={`M ${xx} ${yy-7} l 7 7 l -7 7 l -7 -7 Z`} fill={color} stroke="white" onClick={()=>onEvidence(e)}/>);shapes.push(txt(xx+10,yy+(e.side==='buy'?42:-38),`确认 ${CLASSES[e.class]} L${e.rank}`,color,11));if(spot(e.anchor))shapes.push(<line key={'link'+id++} x1={x(e.anchor)} y1={y(e.price)} x2={xx} y2={yy} stroke={color} strokeDasharray="2 5"/>) }
+  if(layers.has('confirmed'))for(const e of p.confirmations||[]){if(!spot(e.observed_index))continue;const xx=x(e.observed_index),bar=bars[e.observed_index],yy=y(bar?.close||e.price),color=e.side==='buy'?'#b44461':'#267f82';if(!coords([xx,yy]))continue;shapes.push(<path key={'cf'+id++} data-confirmed-class={e.class} d={`M ${xx} ${yy-7} l 7 7 l -7 7 l -7 -7 Z`} fill={color} stroke="white" onClick={()=>onEvidence(e)}><title>{`实际确认 ${CLASSES[e.class]} ${e.observed_at}`}</title></path>);shapes.push(txt(xx+10,yy+(e.side==='buy'?42:-38),`确认 ${CLASSES[e.class]} L${e.rank}`,color,11));if(spot(e.anchor))shapes.push(<line key={'link'+id++} x1={x(e.anchor)} y1={y(e.price)} x2={xx} y2={yy} stroke={color} strokeDasharray="2 5"/>) }
  }
- const bar=hover||bars.at(-1)||{};
+ const bar=hover||(focus?bars[focus.event==='confirmed'?focus.observed_index:focus.anchor]:null)||bars.at(-1)||{};
  return <div className={'lc-chart-stack '+(fullScreen?'expanded':'')} data-chart-ready={Boolean(geometry)}>
+  {focus&&CLASSES[focus.class]&&<div className="lc-signal-focus">正在定位：{CLASSES[focus.class]} L{focus.rank} · {focus.anchor_time||focus.event_time||bars[focus.anchor]?.date_cn} · {signalStatus(focus)}{focus.confirmed_at?' · 确认于 '+focus.confirmed_at:''}</div>}
   <div className="lc-chart-readout"><span className="mono">{hover?.date||bar.date_cn}</span><span>开 <b>{fmt(bar.open)}</b></span><span>高 <b>{fmt(bar.high)}</b></span><span>低 <b>{fmt(bar.low)}</b></span><span>收 <b>{fmt(line?bar.value:bar.close)}</b></span><span className="readout-help">{line?'价格快照':'滚轮缩放 · 拖动历史 · 点选结构'}</span></div>
   <div className="lc-main-chart"><div ref={mainEl} className="chart-host"/>{geometry&&<svg ref={svgEl} width={geometry.width} height={geometry.height} className="lc-overlays"><defs><clipPath id="lc-clip"><rect width={geometry.pw} height={geometry.height}/></clipPath></defs><g clipPath="url(#lc-clip)">{shapes}</g></svg>}</div>
   <div className="lc-indicator-title">VOL <span>成交量 · 股</span></div><div ref={volEl} className="lc-volume-chart"/>

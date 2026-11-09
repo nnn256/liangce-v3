@@ -15,7 +15,7 @@ from .structure import merge_bars, fractals_at, strokes_at
 from .segments import build_segments, append_feature, feature
 from .signals import attach_ranges
 from .v2.recursive import base_units, build_hierarchy, audit_hierarchy, center_relation
-from .v2.divergence import compare_divergences, make_signals
+from .v2.divergence import compare_divergences, make_signals, anchor_signals_to_extremes
 
 PROFILE = 'source_declared_complete_study_layers_v1'
 SIGNAL_NAMES = {'first_buy':'一买','second_buy':'二买','third_buy':'三买',
@@ -139,7 +139,7 @@ def analyze_complete(symbol,period,bars,cutoff,input_sha256):
     for i,layer in enumerate(hierarchy['levels']):
         rank=layer['rank'];centers=layer['centers']
         comps=enrich_comparisons(compare_divergences(children,centers,selected,base['macd'],rank,len(selected)-1),base['macd'])
-        points=make_signals(children,centers,comps,selected,rank,base['macd'])
+        points=anchor_signals_to_extremes(make_signals(children,centers,comps,selected,rank,base['macd']),selected)
         for point in points:
             point.update(label=SIGNAL_NAMES[point['class']], event_time=event_time(selected,point['anchor']),
                          available_time=event_time(selected,point['available_at']),

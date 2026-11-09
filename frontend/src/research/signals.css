@@ -1,0 +1,12 @@
+.lc-buy-sell{padding:12px 13px;border-bottom:1px solid #e2ebf2;background:#f8fbfe}
+.lc-buy-sell-heading{display:flex;align-items:center;gap:10px;font-size:11px;color:#516f88;margin-bottom:10px}
+.lc-buy-sell-heading>span{font-size:9px;color:#8ca0b1;flex:1}.lc-buy-sell-heading>button{background:#fff;border:1px solid #d7e3ed;padding:5px 9px;border-radius:4px;font-size:10px;color:#557e9e}
+.lc-six-signals{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.lc-six-signals>button{background:#fff;border:1px solid #e0e8ef;border-radius:5px;padding:8px;text-align:left;min-width:0}
+.lc-six-signals>button.buy{color:#b54f62}.lc-six-signals>button.sell{color:#258875}
+.lc-six-signals>button.selected{box-shadow:0 0 0 1px currentColor;border-color:currentColor}
+.lc-six-signals span{display:flex;align-items:center;justify-content:space-between;gap:5px;font-size:11px}.lc-six-signals strong{font:16px Consolas,monospace}.lc-six-signals small{display:block;font-size:8px;line-height:1.7;margin-top:5px;color:#899eaf}
+.lc-signal-actions{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-top:10px;font-size:9px;line-height:1.7;color:#849cad}.lc-signal-actions>div{display:flex;gap:4px;flex-shrink:0}
+.lc-signal-actions button{border:1px solid #dfe8ef;border-radius:4px;background:white;display:flex;align-items:center;justify-content:center;gap:4px;min-height:26px;font-size:9px;color:#6488a7}
+.lc-signal-focus{padding:8px 13px;border-bottom:1px solid #e4edf4;background:#fff8f1;color:#947754;font-size:10px;line-height:1.7}
+@media(max-width:750px){.lc-six-signals{grid-template-columns:repeat(3,minmax(0,1fr))}.lc-buy-sell-heading>span{font-size:8px}.lc-buy-sell{padding:10px 8px}.lc-signal-actions{align-items:flex-start;flex-direction:column}.lc-signal-actions>div{align-self:flex-end}.lc-six-signals small{font-size:8px}.lc-signal-focus{font-size:9px}}
