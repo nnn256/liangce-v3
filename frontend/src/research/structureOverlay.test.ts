@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {allStructureLayers} from './structureOverlay';
+import type {Panel} from './types';
+const fine={strokes:[{id:'p'}],fractals:[{id:'f'}],centers:[{id:'pc'}],signals:[{id:'ps'}]};
+const source={coverage:{input_sha256:'live'},segments:[{id:'s'}],all_centers:[{id:'c'}],signals:[{id:'ss'}],stroke_model:fine} as unknown as Panel;
+const primary={...source,resolution:'stroke',...fine,all_centers:fine.centers,signals:fine.signals} as unknown as Panel;
+const both=allStructureLayers(primary,source,null);
+assert.deepEqual(both.strokes,[{id:'p'}]);assert.deepEqual(both.segments,[{id:'s'}]);
+assert.deepEqual(both.signals.map((p:any)=>p.id),['ps','ss']);
+assert.deepEqual(both.all_centers.map((p:any)=>p.resolution),['stroke','segment']);
+const old={...primary,coverage:{input_sha256:'historical'}} as Panel;
+const historical=allStructureLayers(old,source,{chart_context:{segments:[{id:'old-s'}],all_centers:[{id:'old-c'}]}});
+assert.deepEqual(historical.segments,[{id:'old-s'}]);
+assert.deepEqual(historical.signals.map((p:any)=>p.id),['ps'],'Current source signals cannot be drawn on another historical input');
+console.log('All structure layers merge independently and preserve the historical input boundary.');

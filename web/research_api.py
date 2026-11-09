@@ -273,6 +273,10 @@ class JobRequest(BaseModel):
 
 def live_bars(code,period):
     from chanmodel.model import Candle
+    from web import tdx_provider
+    if tdx_provider.enabled():
+        bars,metadata=tdx_provider.fetch(code,period,datetime.now(CN))
+        return bars,{**metadata,'confirmation_eligible':metadata.get('split_adjustment_verified') is True}
     if period not in NATIVE:raise ValueError('此周期暂只支持已归档数据；上游原生接口不提供该周期，不能用其他周期替代')
     import market_gateway as mg
     result=mg.fetch_symbol_klines(code[2:]+'.'+code[:2].upper(),NATIVE[period]);items=result.get('klines',[])

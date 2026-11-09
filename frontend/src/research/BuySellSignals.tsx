@@ -11,7 +11,7 @@ export function BuySellSignals({signals,selected,focusedId,diagnostics,resolutio
   onSelect(group[index<0?(offset>0?0:group.length-1):(index+(offset>0?1:-1)+group.length)%group.length]);
  };
  return <section className="lc-buy-sell" aria-label="六类买卖点">
-  <div className="lc-buy-sell-heading"><b>买卖点</b><span>{resolution==='stroke'?'笔级观察 · 代理规则':'线段/递归走势级'} · 锚点与确认时刻分开</span><button onClick={showAll}>显示全部</button></div>
+  <div className="lc-buy-sell-heading"><b>买卖点</b><span>{resolution==='both'?'笔级观察＋线段/递归走势':resolution==='stroke'?'笔级观察 · 代理规则':'线段/递归走势级'} · 锚点与确认时刻分开</span><button onClick={showAll}>显示全部</button></div>
   <div className="lc-six-signals">{SIGNAL_CLASSES.map(kind=>{
    const points=signals.filter(point=>point.class===kind),confirmed=points.filter(point=>point.has_confirmation).length;
    return <button key={kind} data-signal-class={kind} aria-pressed={selected===kind} className={(kind.endsWith('buy')?'buy':'sell')+(selected===kind?' selected':'')} onClick={()=>{onClass(kind);if(points.length)onSelect(points.at(-1)!)}}>

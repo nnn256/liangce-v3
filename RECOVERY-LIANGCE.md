@@ -137,3 +137,13 @@
 - 增加GET live-panel?refresh=true，跳过图表短缓存。自动15秒交易/300秒休市，报价原有10秒交易/300秒休市，页面隐藏暂停，回前台获取。回放时暂停主图轮询且状态明确固定时间。只用闭合K线确认结构。
 - 48项Python检查通过（新增缓存内修改同根价格强制取数），TS和构建通过。本地浏览器8837实际验证默认没有自动明细请求、普通轮询发出、强制刷新03:34:34及返回实时03:35:13源取数时间前进，source_kind=live_market_panel；历史须显式打开且可退出。
 - 备份基线D:/stock-dashboard-backups/realtime-default-20261110/BASELINE.zip；不提交无关data运行日志。下一动作手机/5m核验→提交并推送main→CI→既有Railway部署并公网核验。
+
+
+## 当前在做：分享未归档股票/回测入口/分型大小/全部叠加（2026-11-10）
+- 用户连续反馈其他人打开新华传媒5日K失败、其他股票回测不行、分型显示大小、三按钮同时全开。本轮统一实现，版本2026.11.10.3尚待最终提交发布。
+- frontend/api旧7周期automaticPanel替换为统一live-panel，无归档自动实时取数并切mode。research_api.live_bars也接TDX。新增实时分享按钮canonical symbol/period/data=live，不含本地设置。截图600825实测TDX返回1550根5日K。
+- 顶部/手机回测入口改为ref触发PrecisionBacktests当前周期任务，完成自动显示回测账户与交易；组件不再依赖panel存在。提供当前/全周期两个按钮，结果latest临时可供其他浏览器读；失败周期partial/failed正确。避免归档异步返回覆盖新任务。未认证公司行动添加回测局限。
+- 本地浏览器8838新华传媒5日K顶部点击完成1/1、7平仓、42.9%胜率、-28.65%回撤、1324.55费用；8839奥雅日线实际顶部回测6平仓/-29.72%回撤；太极日线7830根已跑46平仓/-42.99%收益。sessionliangce-shared-stock/ li angce-all-scales分别测过；执行服务8838旧中期后台，8839较新后台。
+- structureScale.ts按K线/笔端/段端分层，保留全分型及价格、原锚点、父结构证据时刻，不把大标记冒称跨周期级别。structureOverlay.ts合并fine笔/粗段/两套中枢信号，三按钮默认同时高亮，回测独立口径。ChartPane显示三开关、全部价格与幅度/根数，已截图D:/stock-dashboard-backups/share-backtest-20261110/all-structures.png。
+- 51项Python通过，TS通过，structureScale/structureOverlay tests通过。当前少量末尾修改需最终lint/build和浏览器再确认→提交GitHub main→CI→既有Railway发布→公网新华5日K实际顶部回测→新浏览器分享/mobile验收→备份回滚/交付。
+- 基线D:/stock-dashboard-backups/share-backtest-20261110/BASELINE.zip，Git当前HEAD57ba5ee。无关data运行日志别提交。

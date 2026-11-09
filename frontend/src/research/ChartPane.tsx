@@ -1,8 +1,9 @@
-import React,{forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react';
+import React,{forwardRef,useEffect,useImperativeHandle,useMemo,useRef,useState} from 'react';
 import {createChart,CandlestickSeries,LineSeries,HistogramSeries,ColorType,type IChartApi} from 'lightweight-charts';
 import type {Evidence,Layer,Panel} from './types';
 import {CLASSES,fmt} from './types';
 import {signalStatus} from './signalDisplay';
+import {fractalScales,rangeSize} from './structureScale';
 
 export interface ChartActions {fit:()=>void;recent:()=>void;zoom:(direction:number)=>void;exportPNG:()=>Promise<void>}
 interface Props {panel:Panel;layers:Set<Layer>;onEvidence:(x:Evidence)=>void;focus:Evidence|null;fullScreen:boolean}
@@ -12,6 +13,9 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
  const handles=useRef<any>(null),dataRef=useRef(p);dataRef.current=p;
  const savedViewport=useRef<any>(null);
  const [geometry,setGeometry]=useState<any>(null),[hover,setHover]=useState<Evidence|null>(null);
+ const [visibleScales,setVisibleScales]=useState(()=>new Set(['fractal','stroke','segment'])),[allFractalPrices,setAllFractalPrices]=useState(true),[showRangeSize,setShowRangeSize]=useState(true);
+ const scaledFractals=useMemo(()=>fractalScales(p),[p]);
+ const toggleScale=(key:string)=>setVisibleScales(previous=>{const next=new Set(previous);next.has(key)?next.delete(key):next.add(key);return next});
  const [original,setOriginal]=useState(''),[rank,setRank]=useState(0);
  const line=p.kind==='line',bars:any[]=line?(p.points||[]):(p.bars||[]);
  const originals=(p.abcd||[]).filter((x:any)=>x.mode==='a+A+b+B+c_then_d');
@@ -41,10 +45,10 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
   handles.current={charts,main,price,recent,update};update();
   return()=>{const range=main.timeScale().getVisibleLogicalRange();savedViewport.current={key:viewKey,range,follow:range?range.to>=bars.length-2:true};disposed=true;cancelAnimationFrame(raf);resize.disconnect();charts.forEach(c=>c.remove());handles.current=null;setGeometry(null)};
  },[p]);
- useEffect(()=>{handles.current?.update()},[layers,original,rank,fullScreen]);
+ useEffect(()=>{handles.current?.update()},[layers,original,rank,fullScreen,visibleScales,allFractalPrices,showRangeSize]);
  useEffect(()=>{if(!focus||!handles.current)return;setHover(null);const anchor=focus.anchor??focus.observed_index??focus.source??focus.end??0;const end=focus.event==='confirmed'?Math.max(anchor,focus.observed_index):anchor;const start=CLASSES[focus.class]?Math.max(0,anchor-80):focus.point?.terminal_range?.[0]??focus.start??Math.max(0,anchor-90);handles.current.main.timeScale().setVisibleLogicalRange({from:Math.max(-1,start-25),to:Math.min(bars.length+6,end+70)});handles.current.update()},[focus]);
  useImperativeHandle(ref,()=>({fit:()=>handles.current?.main.timeScale().fitContent(),recent:()=>handles.current?.recent(),zoom:(d)=>{const s=handles.current?.main.timeScale(),r=s?.getVisibleLogicalRange();if(r){const length=(r.to-r.from)*(d>0?.7:1.4);s.setVisibleLogicalRange({from:r.to-length,to:r.to})}},exportPNG:async()=>{
-   const h=handles.current;if(!h)return;const chart=h.main.takeScreenshot();const svg=svgEl.current;const result=document.createElement('canvas');result.width=chart.width;result.height=chart.height+94;const ctx=result.getContext('2d')!;ctx.fillStyle='#fff';ctx.fillRect(0,0,result.width,result.height);ctx.fillStyle='#24384d';ctx.font='600 20px system-ui';ctx.fillText(`${p.name} ${p.symbol} · ${p.label} · ${p.resolution==='stroke'?'精细笔级代理':'线段方向'}`,20,30);ctx.font='12px system-ui';ctx.fillStyle='#687e93';ctx.fillText(`数据截至 ${p.data_as_of||p.coverage.last} · ${p.adjustment_note||p.coverage.source}`,20,53);ctx.drawImage(chart,0,70);
+   const h=handles.current;if(!h)return;const chart=h.main.takeScreenshot();const svg=svgEl.current;const result=document.createElement('canvas');result.width=chart.width;result.height=chart.height+94;const ctx=result.getContext('2d')!;ctx.fillStyle='#fff';ctx.fillRect(0,0,result.width,result.height);ctx.fillStyle='#24384d';ctx.font='600 20px system-ui';ctx.fillText(`${p.name} ${p.symbol} · ${p.label} · ${(p.resolution==='stroke'||p.structure_view==='both')?'精细笔级代理':'线段方向'}`,20,30);ctx.font='12px system-ui';ctx.fillStyle='#687e93';ctx.fillText(`数据截至 ${p.data_as_of||p.coverage.last} · ${p.adjustment_note||p.coverage.source}`,20,53);ctx.drawImage(chart,0,70);
    if(svg){const copy=svg.cloneNode(true) as SVGSVGElement;copy.setAttribute('xmlns','http://www.w3.org/2000/svg');const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});const url=URL.createObjectURL(blob);const img=new Image();await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=()=>reject(Error('图层导出失败'));img.src=url});ctx.drawImage(img,0,70);URL.revokeObjectURL(url)}
    ctx.font='11px system-ui';ctx.fillText('量测 v3 · TradingView Lightweight Charts · 确认可能随后失效',20,result.height-8);const a=document.createElement('a');a.href=result.toDataURL('image/png');a.download=`量测v3_${p.symbol}_${p.period}.png`;document.body.appendChild(a);a.click();a.remove();
  }}),[p]);
@@ -52,17 +56,29 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
  if(geometry&&(!line||p.structural_ohlc)){const {x,y,pw,height,range}=geometry,lo=Math.floor(range.from),hi=Math.ceil(range.to);const inView=(s:any)=>s.end>=lo&&s.start<=hi;const spot=(i:number)=>i>=lo&&i<=hi;
   const coords=(values:any[])=>values.every(v=>v!==null&&Number.isFinite(v));
   const txt=(xx:number,yy:number,text:string,color:string,size=11)=>coords([xx,yy])&&<text key={'t'+id++} x={Math.max(4,Math.min(pw-65,xx))} y={Math.max(15,Math.min(height-5,yy))} fill={color} fontSize={size} fontFamily="system-ui,Microsoft YaHei" stroke="white" strokeWidth="3" paintOrder="stroke">{text}</text>;
-  const path=(s:any,color:string,width:number,dash?:string)=>{if(!inView(s))return;const a=x(s.start),b=x(s.end),c=y(s.start_price),d=y(s.end_price);if(coords([a,b,c,d]))shapes.push(<line key={'l'+id++} x1={a} x2={b} y1={c} y2={d} stroke={color} strokeWidth={width} strokeDasharray={dash} onClick={()=>onEvidence(s)}><title>{s.id} · {s.state}</title></line>)};
-  if(layers.has('centers'))for(const c of p.all_centers||p.centers||[]){if(!inView(c))continue;const a=x(c.start),b=x(c.end),top=y(c.zg),bottom=y(c.zd),color=COLORS[Math.max(0,c.rank-1)%4];if(!coords([a,b,top,bottom]))continue;shapes.push(<rect key={'c'+id++} x={a} y={Math.min(top,bottom)} width={Math.max(1,b-a)} height={Math.max(1,Math.abs(bottom-top))} fill={color} fillOpacity={.08} stroke={color} strokeWidth={1.2} strokeDasharray={c.rank>1?'6 3':undefined} onClick={()=>onEvidence(c)}><title>{`L${c.rank} 中枢 ${fmt(c.zd)}—${fmt(c.zg)}`}</title></rect>);if(b-a>105)shapes.push(txt(Math.max(8,a+7),top-7,`L${c.rank} ${fmt(c.zd)}–${fmt(c.zg)}`,color));if(layers.has('outer')){const yy=y(c.gg),zz=y(c.dd);if(coords([yy,zz]))shapes.push(<rect key={'o'+id++} x={a} y={yy} width={Math.max(1,b-a)} height={Math.max(1,zz-yy)} fill="none" stroke={color} strokeOpacity=".35" strokeDasharray="3 4"/>)}}
+  const path=(s:any,color:string,width:number,dash?:string)=>{if(!inView(s))return;const a=x(s.start),b=x(s.end),c=y(s.start_price),d=y(s.end_price);if(coords([a,b,c,d]))shapes.push(<line key={'l'+id++} x1={a} x2={b} y1={c} y2={d} stroke={color} strokeWidth={width} strokeDasharray={dash} data-structure-range={s.id} onClick={()=>onEvidence({...s,...rangeSize(s,bars)})}><title>{s.id} · {s.state} · {rangeSize(s,bars).range_bars}根 · 幅度{fmt(rangeSize(s,bars).range_amplitude_percent)}%</title></line>)};
+  if(layers.has('centers'))for(const c of p.all_centers||p.centers||[]){if(!inView(c))continue;const a=x(c.start),b=x(c.end),top=y(c.zg),bottom=y(c.zd),color=c.resolution==='stroke'?'#8d74ad':COLORS[Math.max(0,c.rank-1)%4];if(!coords([a,b,top,bottom]))continue;shapes.push(<rect key={'c'+id++} x={a} y={Math.min(top,bottom)} width={Math.max(1,b-a)} height={Math.max(1,Math.abs(bottom-top))} fill={color} fillOpacity={.08} stroke={color} strokeWidth={1.2} strokeDasharray={c.rank>1?'6 3':undefined} onClick={()=>onEvidence({...c,...rangeSize(c,bars)})}><title>{`${c.resolution==='stroke'?'笔级':'L'+c.rank} 中枢 ${fmt(c.zd)}—${fmt(c.zg)} · 核心宽${fmt(rangeSize(c,bars).core_width_percent)}% · ${rangeSize(c,bars).range_bars}根`}</title></rect>);if(b-a>105)shapes.push(txt(Math.max(8,a+7),top-7,`${c.resolution==='stroke'?'笔级':'L'+c.rank} ${fmt(c.zd)}–${fmt(c.zg)}${showRangeSize?' · 宽'+fmt(rangeSize(c,bars).core_width_percent)+'% / '+rangeSize(c,bars).range_bars+'根':''}`,color));if(layers.has('outer')){const yy=y(c.gg),zz=y(c.dd);if(coords([yy,zz]))shapes.push(<rect key={'o'+id++} x={a} y={yy} width={Math.max(1,b-a)} height={Math.max(1,zz-yy)} fill="none" stroke={color} strokeOpacity=".35" strokeDasharray="3 4"/>)}}
   if(layers.has('strokes'))for(const s of p.strokes||[]){
-   path(s,p.resolution==='stroke'?'#4e7da8':'#9aaec1',p.resolution==='stroke'?1.8:1.1,s.state==='confirmed'?undefined:'3 3');
-   if(p.resolution==='stroke'&&spot(s.end)&&coords([x(s.end),y(s.end_price)])){
-    shapes.push(<circle key={'sp'+id++} data-stroke-end={s.end} cx={x(s.end)} cy={y(s.end_price)} r={2.6} fill="white" stroke={s.state==='confirmed'?'#4e7da8':'#ba8a46'} onClick={()=>onEvidence({...s,type:'笔端点',note:'笔端点/分型不直接等于一二三类买卖点'})}/>);
+   path(s,(p.resolution==='stroke'||p.structure_view==='both')?'#4e7da8':'#9aaec1',(p.resolution==='stroke'||p.structure_view==='both')?1.8:1.1,s.state==='confirmed'?undefined:'3 3');
+   if((p.resolution==='stroke'||p.structure_view==='both')&&spot(s.end)&&coords([x(s.end),y(s.end_price)])){
+    shapes.push(<circle key={'sp'+id++} data-stroke-end={s.end} cx={x(s.end)} cy={y(s.end_price)} r={2.6} fill="white" stroke={s.state==='confirmed'?'#4e7da8':'#ba8a46'} onClick={()=>onEvidence({...s,...rangeSize(s,bars),type:'笔端点',note:'笔端点/分型不直接等于一二三类买卖点'})}/>);
     shapes.push(txt(x(s.end)+4,y(s.end_price)+(s.direction==='up'?-10:17),(s.state==='confirmed'?'':'形成中 ')+fmt(s.end_price),s.state==='confirmed'?'#4e7da8':'#ba8a46',9));
    }
+   if(showRangeSize&&inView(s)&&Math.abs(x(s.end)-x(s.start))>75)shapes.push(txt((x(s.start)+x(s.end))/2,(y(s.start_price)+y(s.end_price))/2-8,'笔幅 '+fmt(rangeSize(s,bars).range_amplitude_percent)+'% / '+rangeSize(s,bars).range_bars+'根','#6385a0',9));
   }
   if(layers.has('segments'))for(const s of p.segments||[]){path(s,s.state==='confirmed'?'#3774ab':'#be872e',2.5,s.state==='confirmed'?undefined:'7 5');if(spot(s.end))shapes.push(txt(x(s.end)+6,y(s.end_price)+(s.direction==='up'?-12:18),fmt(s.end_price),s.state==='confirmed'?'#3774ab':'#be872e'))}
-  if(layers.has('fractals'))for(const f of p.fractals||[]){if(!spot(f.source))continue;const xx=x(f.source),yy=y(f.price)+(f.kind==='top'?-8:8),top=f.kind==='top';if(!coords([xx,yy]))continue;shapes.push(<path key={'f'+id++} d={top?`M ${xx-3} ${yy-3} L ${xx+3} ${yy-3} L ${xx} ${yy+3} Z`:`M ${xx-3} ${yy+3} L ${xx+3} ${yy+3} L ${xx} ${yy-3} Z`} fill={top?'#bc6c77':'#388e7d'} onClick={()=>onEvidence({...f,type:'分型',confirmation:'由右侧K线提供证据；不是独立买卖点'})}><title>{top?'顶分型':'底分型'} {fmt(f.price)}</title></path>)}
+  if(layers.has('fractals'))for(const f of scaledFractals){
+   if(!spot(f.source)||!visibleScales.has(f.scale))continue;
+   const top=f.kind==='top',xx=x(f.source),yy=y(f.price)+(top?-12:12),radius=f.marker_size;
+   if(!coords([xx,yy]))continue;
+   const color=f.scale==='segment'?'#8756a1':f.scale==='stroke'?'#427baa':top?'#c96978':'#399f8b';
+   const label=f.scale==='segment'?'段':f.scale==='stroke'?'笔':'';
+   shapes.push(<g key={'f'+id++} data-fractal-scale={f.scale} data-fractal-source={f.source} role="button" aria-label={`${f.scale_label} ${top?'顶':'底'} ${fmt(f.price)}`} tabIndex={0} onClick={()=>onEvidence(f)} onKeyDown={event=>{if(event.key==='Enter')onEvidence(f)}}>
+    <path d={top?`M ${xx-radius} ${yy-radius} L ${xx+radius} ${yy-radius} L ${xx} ${yy+radius} Z`:`M ${xx-radius} ${yy+radius} L ${xx+radius} ${yy+radius} L ${xx} ${yy-radius} Z`} fill={color} fillOpacity={f.scale==='fractal'?.7:1} stroke={f.scale==='segment'?'white':'none'} strokeWidth={1.3} strokeDasharray={f.scale_state==='结构形成中'?'2 2':undefined}/>
+    <title>{`${f.scale_label} · ${top?'顶':'底'} ${fmt(f.price)} · ${f.scale_state} · ${f.range_bars}根 · 幅度${fmt(f.range_amplitude_percent)}%`}</title>
+   </g>);
+   if(allFractalPrices||f.scale!=='fractal')shapes.push(txt(xx+radius+3,yy+(top?-radius-3:radius+10),label+(top?'顶 ':'底 ')+fmt(f.price),color,f.scale==='segment'?11:8));
+  }
   let lane=0;if(layers.has('signals'))for(const s of points){
    if(!spot(s.anchor))continue;
    const xx=x(s.anchor),yy=y(s.price),color=s.side==='buy'?'#b44461':'#267f82';if(!coords([xx,yy]))continue;
@@ -84,6 +100,7 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
  }
  const bar=hover||(focus?bars[focus.event==='confirmed'?focus.observed_index:focus.anchor]:null)||bars.at(-1)||{};
  return <div className={'lc-chart-stack '+(fullScreen?'expanded':'')} data-chart-ready={Boolean(geometry)}>
+  {layers.has('fractals')&&<div className="lc-fractal-scales" aria-label="分型大小显示"><span>分型大小</span>{[['fractal','小 · K线'],['stroke','中 · 笔端'],['segment','大 · 段端']].map(([key,label])=><button key={key} aria-pressed={visibleScales.has(key)} onClick={()=>toggleScale(key)}>{label} <b>{scaledFractals.filter(f=>f.scale===key).length}</b></button>)}<label><input type="checkbox" checked={allFractalPrices} onChange={event=>setAllFractalPrices(event.target.checked)}/>全部分型价格</label><label><input type="checkbox" checked={showRangeSize} onChange={event=>setShowRangeSize(event.target.checked)}/>笔 / 中枢幅度与根数</label><small>大小按当前结构分层；形成中另标，不等同跨周期级别</small></div>}
   {focus&&CLASSES[focus.class]&&<div className="lc-signal-focus">正在定位：{CLASSES[focus.class]} {focus.resolution==='stroke'?'笔级':'L'+focus.rank} · {focus.anchor_time||focus.event_time||bars[focus.anchor]?.date_cn} · {signalStatus(focus)}{focus.confirmed_at?' · 确认于 '+focus.confirmed_at:''}</div>}
   <div className="lc-chart-readout"><span className="mono">{hover?.date||bar.date_cn}</span><span>开 <b>{fmt(bar.open)}</b></span><span>高 <b>{fmt(bar.high)}</b></span><span>低 <b>{fmt(bar.low)}</b></span><span>收 <b>{fmt(line?bar.value:bar.close)}</b></span><span className="readout-help">{line?'价格快照':'滚轮缩放 · 拖动历史 · 点选结构'}</span></div>
   <div className="lc-main-chart"><div ref={mainEl} className="chart-host"/>{geometry&&<svg ref={svgEl} width={geometry.width} height={geometry.height} className="lc-overlays"><defs><clipPath id="lc-clip"><rect width={geometry.pw} height={geometry.height}/></clipPath></defs><g clipPath="url(#lc-clip)">{shapes}</g></svg>}</div>

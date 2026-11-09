@@ -35,11 +35,13 @@ def chart_context(code,period,bars,digest):
     from chanmodel.complete_study import analyze_complete
     from chanmodel.causal_replay import abcd_objects
     from chanmodel.signals import macd
+    from chanmodel.stroke_signals import snapshot as stroke_snapshot
     report=analyze_complete(code,period,bars,bars[-1].closed_at,digest)
     return {**{key:report['base'][key] for key in ['strokes','segments','fractals']},
             'macd':[dict(time=int(datetime.fromisoformat(bar.closed_at).timestamp())+8*3600,**value)
                     for bar,value in zip(bars,macd(bars,Config(macd_multiplier=2)))],
             'all_centers':[c for level in report['hierarchy']['levels'] for c in level['centers']],
+            'segment_signals':report['signals'],'stroke_model':stroke_snapshot(bars),
             'abcd':abcd_objects(report)}
 
 
@@ -114,6 +116,8 @@ def execute_period(code,period,resolution,bars,metadata,daily_bars,daily_meta,pr
     # certification and original equivalence remain separate evidence fields.
     replay['original_data_certified']=eligible
     fills=portfolio(code,period,closed,replay['signal_events'],metadata,daily_bars,daily_meta)
+    if not eligible:
+        fills['limitations'].append('Corporate action history is not independently certified for this symbol; unverified distributions and adjustment gaps are not corrected.')
     class_stats={}
     for kind in CLASSES:
         confirms=[e for e in replay['confirmations'] if e['class']==kind]
@@ -173,13 +177,20 @@ def start(code,resolution,periods=None):
                 except Exception as error:row={'period':period,'state':'failed','error':str(error)[:500]}
                 with lock:run['rows']=run['rows']+[row];run['completed']+=1
                 pack(runtime()/ident/'summary.json.gz',dict(run))
-            with lock:run.update(state='completed',progress=100,finished_at=datetime.now(tdx.CN).isoformat())
+            failed=sum(row['state']=='failed' for row in run['rows'])
+            with lock:run.update(state='failed' if failed==len(periods) else 'partial' if failed else 'completed',
+                                 failed_periods=failed,succeeded=len(periods)-failed,progress=100,finished_at=datetime.now(tdx.CN).isoformat())
             pack(runtime()/ident/'summary.json.gz',dict(run))
+            if run['succeeded']:
+                latest=runtime()/'latest'/f'{code}__{resolution}.json'
+                latest.parent.mkdir(parents=True,exist_ok=True)
+                temporary=latest.with_suffix('.tmp');temporary.write_text(json.dumps({'id':ident}),encoding='utf-8');temporary.replace(latest)
             # Only bounded summaries are retained in memory; details live on disk.
             with lock:
                 while len(runs)>8:runs.pop(next(iter(runs)))
         except Exception as error:
             with lock:run.update(state='failed',error=str(error)[:500])
+            pack(runtime()/ident/'summary.json.gz',dict(run))
     pool.submit(work);return dict(run)
 
 
@@ -203,6 +214,10 @@ def detail(ident,period):
 
 def available(code,resolution):
     if resolution not in {'stroke','segment'}:raise HTTPException(422,'回测结构级别无效')
+    latest=runtime()/'latest'/f'{code}__{resolution}.json'
+    if latest.is_file():
+        result=status(json.loads(latest.read_text(encoding='utf-8'))['id'])
+        result['saved_replay']=True;return result
     index=ARCHIVE/'manifest.json'
     if not index.is_file():raise HTTPException(404,'此股票暂未保存完整回测，可启动全周期回放')
     manifest=json.loads(index.read_text(encoding='utf-8'))

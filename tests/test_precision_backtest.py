@@ -1,5 +1,5 @@
 """Precision stroke/segment replay contracts and real costs."""
-import gzip,hashlib,json,sys,time,unittest
+import gzip,hashlib,json,os,sys,tempfile,time,unittest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -13,6 +13,38 @@ from web.precision_backtest import execute_period,CostModel
 
 
 class PrecisionBacktestTests(unittest.TestCase):
+    def test_unarchived_stock_fetches_real_source_contract_and_current_period_fills(self):
+        from web import precision_backtest as backtest
+        bars=[Candle(i,10,11,9,10,f'2026-01-{i+1:02}T15:00:00+08:00',10000,True) for i in range(8)]
+        metadata={'source':'oficcejo/tdx-api','adjustment':'unadjusted','split_adjustment_verified':False}
+        app=FastAPI();app.include_router(api.router);client=TestClient(app)
+        with tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'LIANGCE_RUNTIME':tmp,'LIANGCE_ALLOWED_ORIGINS':'http://testserver'}),patch.object(backtest,'runs',{}),patch.object(backtest.tdx,'fetch',return_value=(bars,metadata)) as fetch,patch.object(backtest.pool,'submit',side_effect=lambda fn:fn()):
+            self.assertEqual(client.get('/api/research/panel/sh600825/5d').status_code,404)
+            started=client.post('/api/research/precision-backtests',json={'symbol':'sh600825','resolution':'stroke','periods':['5d']},headers={'Origin':'http://testserver'})
+            self.assertEqual(started.status_code,202,started.text)
+            result=client.get('/api/research/precision-backtests/'+started.json()['id']).json()
+            self.assertEqual(result['state'],'completed',result)
+            detail=client.get(result['rows'][0]['detail_url']).json()
+            self.assertEqual(detail['symbol'],'sh600825');self.assertEqual(detail['period'],'5d')
+            self.assertIn('completed_trades',detail['portfolio_metrics'])
+            self.assertFalse(detail['strict_original_equivalence_proven'])
+            self.assertTrue(any('not independently certified' in text for text in detail['portfolio_limitations']))
+            self.assertEqual([call.args[1] for call in fetch.call_args_list],['day','5d'])
+            latest=client.get('/api/research/saved-replays/sh600825/stroke')
+            self.assertEqual(latest.status_code,200);self.assertEqual(latest.json()['id'],result['id'])
+
+    def test_failed_period_is_not_reported_as_complete_success(self):
+        from web import precision_backtest as backtest
+        bars=[Candle(i,10,11,9,10,f'2026-01-{i+1:02}T15:00:00+08:00',10000,True) for i in range(6)]
+        metadata={'source':'test','adjustment':'unadjusted'}
+        def fetch(code,period,now):
+            if period=='year':raise ValueError('Year history unavailable')
+            return bars,metadata
+        with tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'LIANGCE_RUNTIME':tmp}),patch.object(backtest,'runs',{}),patch.object(backtest.tdx,'fetch',side_effect=fetch),patch.object(backtest.pool,'submit',side_effect=lambda fn:fn()):
+            result=backtest.start('sh600825','stroke',['day','year'])
+            self.assertEqual(result['state'],'partial');self.assertEqual(result['failed_periods'],1)
+            self.assertEqual(result['rows'][1]['state'],'failed')
+
     def test_saved_replays_have_exact_chart_inputs_and_causal_confirmations(self):
         from web import precision_backtest as backtest
         manifest=json.loads((backtest.ARCHIVE/'manifest.json').read_text(encoding='utf-8'))

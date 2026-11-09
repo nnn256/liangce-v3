@@ -72,6 +72,16 @@ class ResearchApiTests(unittest.TestCase):
             self.assertEqual(api.jobs[ident]['state'],'failed')
             self.assertIn('OHLC',api.jobs[ident]['error'])
 
+    def test_manual_live_analysis_accepts_tdx_five_day_other_stock(self):
+        from web import tdx_provider as tdx
+        from chanmodel.model import Candle
+        bars=[Candle(i,10,11,9,10,f'2026-01-{i+1:02}T15:00:00+08:00',10000,True) for i in range(6)]
+        metadata={'source':'oficcejo/tdx-api','adjustment':'unadjusted'}
+        with patch.object(tdx,'enabled',return_value=True),patch.object(tdx,'fetch',return_value=(bars,metadata)) as fetch:
+            actual,provenance=api.live_bars('sh600825','5d')
+        self.assertEqual(actual,bars);self.assertFalse(provenance['confirmation_eligible'])
+        self.assertEqual(fetch.call_args.args[:2],('sh600825','5d'))
+
     def test_result_path_and_failed_job_are_not_success(self):
         self.assertEqual(self.client.get('/api/research/jobs/not-a-job/result').status_code,422)
         self.assertEqual(self.client.get('/api/research/jobs/'+'d'*32+'/result').status_code,404)

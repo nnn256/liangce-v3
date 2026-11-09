@@ -49,17 +49,8 @@ export async function archivedPanel(symbol:string,period:string,signal?:AbortSig
  const stream=new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'));return JSON.parse(await new Response(stream).text());
 }
 async function automaticPanel(symbol:string,period:string,signal:AbortSignal){
- if(!['day','5m','15m','30m','60m','week','month'].includes(period))throw new Error('该股票此周期暂无归档，上游尚未提供可直接计算的原生数据');
- const job=await request('/api/research/jobs',{method:'POST',body:JSON.stringify({symbol,period,source:'live',mode:'analysis'})},signal,20000);
- const deadline=Date.now()+180000;
- while(Date.now()<deadline){
-  signal.throwIfAborted();
-  const state=await request('/api/research/jobs/'+job.id,{},signal);
-  if(state.state==='failed')throw new Error(state.error||'自动取数失败');
-  if(state.state==='completed')return {panel:await request<Panel>(state.result_url,{},signal,90000),mode:'api' as const,notice:'已自动获取行情并计算结构 · 原生数据口径见来源说明'};
-  await new Promise<void>((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(signal.reason)};const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve()},1500);signal.addEventListener('abort',abort,{once:true})});
- }
- throw new Error('自动取数仍在运行，请稍后重新打开该股票');
+ const panel=await request<Panel>('/api/research/live-panel/'+symbol+'/'+period,{cache:'no-store'},signal,90000);
+ return {panel,mode:'api' as const,notice:'此股票/周期没有固定归档，已从行情源获取实际K线并切换实时图表'};
 }
 export async function loadPanel(symbol:string,period:string,signal:AbortSignal):Promise<{panel:Panel;mode:'api'|'archive';notice?:string}>{
  if(publicStatic()&&!backend())return {panel:await archivedPanel(symbol,period,signal),mode:'archive',notice:'公开历史归档 · 新计算需要连接后端'};
@@ -71,7 +62,7 @@ export async function loadPanel(symbol:string,period:string,signal:AbortSignal):
  }
  catch(e){
   if(signal.aborted)throw e;
-  if(e instanceof ApiError&&e.status===404&&symbol!=='sz300949')return automaticPanel(symbol,period,signal);
+  if(e instanceof ApiError&&e.status===404)return automaticPanel(symbol,period,signal);
   if(symbol!=='sz300949')throw e;
   const panel=await archivedPanel(symbol,period,signal);return {panel,mode:'archive',notice:backend()?'后端暂不可用，当前显示已核验历史归档':'公开历史归档 · 新计算需要连接后端'};
  }
