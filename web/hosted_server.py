@@ -21,6 +21,8 @@ app.add_middleware(GZipMiddleware,minimum_size=1024)
 origins=[x.strip().rstrip('/') for x in os.environ.get('LIANGCE_ALLOWED_ORIGINS','https://nnn256.github.io').split(',') if x.strip()]
 app.add_middleware(CORSMiddleware,allow_origins=origins,allow_methods=['GET','POST'],allow_headers=['Authorization','Content-Type'],expose_headers=['ETag'],allow_credentials=False)
 app.include_router(router)
+from web.workbench_api import router as workbench_router
+app.include_router(workbench_router)
 DIST=ROOT/'web/dist'
 if (DIST/'assets').is_dir():app.mount('/assets',StaticFiles(directory=str(DIST/'assets')),name='assets')
 
