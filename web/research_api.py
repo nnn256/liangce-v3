@@ -74,7 +74,11 @@ def health():
             'hosting':os.environ.get('LIANGCE_HOSTING','local'),
             'compute_limits':{'workers':WORKERS,'queue':QUEUE_LIMIT,'max_input_bars':MAX_COMPUTE_BARS},
             'runtime_storage':'ephemeral' if os.environ.get('LIANGCE_EPHEMERAL')=='1' else 'local',
-            'live_chart_enabled':True,'live_chart_periods':['1m','5m','15m','30m','60m','day','5d','week','month','quarter','year'],
+            'live_chart_enabled':True,'live_chart_periods':['timeshare','five_days','1m','5m','15m','30m','60m','day','5d','week','month','quarter','year'],
+            'unsupported_signal_views':{'auction':'竞价价格快照缺少连续OHLC与次级走势证据，不生成六类确认点'},
+            'live_chart_source':('oficcejo/tdx-api@ea07dccb67aeb92ebde851ac31503b4bf457a318'
+                                 if os.environ.get('LIANGCE_TDX_API') or os.environ.get('LIANGCE_TDX_BINARY') else
+                                 'acb6104/opentdx' if os.environ.get('LIANGCE_OPENTDX_PYTHON') else 'stock-dashboard/market_gateway'),
             'tdx_configured':bool(os.environ.get('LIANGCE_TDX_API') or os.environ.get('LIANGCE_TDX_BINARY') or os.environ.get('LIANGCE_OPENTDX_PYTHON')),
             'refresh_seconds':{'quotes_trading':10,'chart_trading':15,'outside_trading_hours':300},
             'frontend_url':'https://nnn256.github.io/liangce-v3/',

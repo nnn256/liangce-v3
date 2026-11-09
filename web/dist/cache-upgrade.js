@@ -5,8 +5,8 @@ self.addEventListener('activate',event=>{
   const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   await Promise.allSettled(clients.map(client=>{
    const url=new URL(client.url);
-   if(!url.href.startsWith(self.registration.scope)||url.searchParams.get('release')==='2026.11.09.4')return;
-   url.searchParams.set('release','2026.11.09.4');
+   if(!url.href.startsWith(self.registration.scope)||url.searchParams.get('release')==='2026.11.09.5')return;
+   url.searchParams.set('release','2026.11.09.5');
    return client.navigate(url.href);
   }));
  })());
