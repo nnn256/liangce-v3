@@ -55,7 +55,7 @@ class ReplaySession:
             self.rows.append(copy.deepcopy(b))
             if i%100==0:progress(i+1)
         self.history=history;progress(len(new))
-        return finish_result(history,history['native_period'],self.rows,self.stream,self.ledger)
+        return copy.deepcopy(finish_result(history,history['native_period'],self.rows,self.stream,self.ledger))
 
 
 class LiveAnalysisCache:
