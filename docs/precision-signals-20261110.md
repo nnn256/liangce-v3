@@ -27,3 +27,5 @@
 成本后净收益：无线传媒笔级日线-2.54%、5分钟-24.06%；奥雅股份笔级日线+92.93%、5分钟+18.41%。奥雅日线最大回撤-29.72%，不能只看正收益。无交易或数据不足的0收益不证明策略有效。交易胜率也不等于原文定义准确率。
 
 完整44组结果见本机artifacts/precision-backtest/README.md与all-period-results.csv，机器可复核版本位于data/precision-replays，manifest.json记录每个压缩结果的SHA256。页面“逐根回放与成交回测”自动加载已保存结果，点击“查看点位”查看该次真实事件与交易。
+
+保存结果补充timeframe/trade_level/confirm_level/trigger_level/structure_completeness/approximation_loss元数据；已发布快照优先于同ID临时文件，避免临时旧版覆盖已核验历史。

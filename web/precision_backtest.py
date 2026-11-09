@@ -47,6 +47,15 @@ def records_from_ledger(ledger):
     return [{**{key:value for key,value in rec.items() if key!='point'},'current_state':rec['state']} for rec in ledger.records.values()]
 
 
+def definition_fields(period,resolution):
+    from chanmodel.stroke_signals import APPROXIMATION_LOSS
+    return {'timeframe':period,'trade_level':'stroke_observation' if resolution=='stroke' else 'recursive_rank_per_signal',
+            'confirm_level':'completed_stroke_on_closed_kline' if resolution=='stroke' else 'declared_recursive_clause_gates',
+            'trigger_level':'same_timeframe_no_lower_movement_verification' if resolution=='stroke' else 'declared_lower_movement_per_signal',
+            'structure_completeness':'inclusion_fractal_stroke_overlap_proxy' if resolution=='stroke' else 'declared_recursive_profile_not_all_original_equivalence',
+            'approximation_loss':APPROXIMATION_LOSS if resolution=='stroke' else '底层线段、力度和完成分解使用声明规范；未证明原文全部解释等价'}
+
+
 def raw_from_adjusted(code,bars,metadata):
     actions=metadata.get('corporate_actions',[]);result=[]
     for i,bar in enumerate(bars):
@@ -121,6 +130,7 @@ def execute_period(code,period,resolution,bars,metadata,daily_bars,daily_meta,pr
         if order['state']=='filled' and (order['time']<order['signal_time'] or order['bar_close_time']<=order['signal_time']):raise ValueError('成交使用了信号可见前或同根K线')
     digest=hashlib.sha256(json.dumps([[b.closed_at,b.open,b.high,b.low,b.close,b.volume] for b in closed]).encode()).hexdigest()
     return {'symbol':code,'period':period,'resolution':resolution,'bars':len(closed),'first':closed[0].closed_at,'last':closed[-1].closed_at,
+            **definition_fields(period,resolution),
             'chart_context':chart_context(code,period,closed,digest),
             'chart_bars':[{'time':int(datetime.fromisoformat(bar.closed_at).timestamp())+8*3600,'source_index':bar.pos,
                            'date_cn':bar.closed_at[:16].replace('T',' '),'open':bar.open,'high':bar.high,'low':bar.low,
@@ -177,16 +187,16 @@ def status(ident):
     if len(ident)!=32 or any(ch not in '0123456789abcdef' for ch in ident):raise HTTPException(422,'回测任务标识无效')
     with lock:
         if ident in runs:return copy.deepcopy(runs[ident])
-    path=runtime()/ident/'summary.json.gz'
-    if not path.is_file():path=ARCHIVE/ident/'summary.json.gz'
+    path=ARCHIVE/ident/'summary.json.gz'
+    if not path.is_file():path=runtime()/ident/'summary.json.gz'
     if path.is_file():return json.loads(gzip.decompress(path.read_bytes()))
     raise HTTPException(404,'回测任务不存在或临时存储已清理')
 
 
 def detail(ident,period):
     if len(ident)!=32 or any(ch not in '0123456789abcdef' for ch in ident) or period not in PERIODS:raise HTTPException(422,'回测结果标识无效')
-    path=runtime()/ident/(period+'.json.gz')
-    if not path.is_file():path=ARCHIVE/ident/(period+'.json.gz')
+    path=ARCHIVE/ident/(period+'.json.gz')
+    if not path.is_file():path=runtime()/ident/(period+'.json.gz')
     if not path.is_file():raise HTTPException(404,'本周期回测尚未完成')
     return json.loads(gzip.decompress(path.read_bytes()))
 

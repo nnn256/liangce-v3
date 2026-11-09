@@ -11,6 +11,7 @@ from .signals import macd
 from .causal_replay import StreamingStructure
 
 PROFILE='stroke_actual_extreme_center_first_retest_v2'
+APPROXIMATION_LOSS='笔重叠替代完成的次级别走势类型；MACD同向面积为力度代理；未证明完整原文多级别等价'
 CLASSES=('first_buy','second_buy','third_buy','first_sell','second_sell','third_sell')
 FINE=Config(stroke_mode='loose',macd_multiplier=2)
 
@@ -100,6 +101,8 @@ def analyze_strokes(strokes,bars,histogram,*,check_invalidation=True,ranges=None
                'center_id':center['id'],'zd':center['zd'],'zg':center['zg'],'available_at':at,
                'available_time':bars[at].closed_at,'event_time':pivot.closed_at,'invalidation':limit,
                'state':'invalidated' if ended else 'candidate','profile':PROFILE,'definition_mode':'stroke_proxy',
+               'trade_level':'stroke_observation','confirm_level':'completed_stroke_on_closed_kline','trigger_level':'same_timeframe_no_lower_movement_verification',
+               'structure_completeness':'inclusion_fractal_stroke_overlap_proxy','approximation_loss':APPROXIMATION_LOSS,
                'rule_audit':{'gates':gates,'passed':all(gates.values()),'missing':[k for k,v in gates.items() if not v]},
                'strict_original_equivalence_proven':False,'execution_allowed':False,**proof}
         points.append(point);return point

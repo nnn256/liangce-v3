@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from web.tdx_provider import CN,fetch
 from chanmodel.stroke_signals import CLASSES
-from web.precision_backtest import pack,PERIODS,chart_context
+from web.precision_backtest import pack,PERIODS,chart_context,definition_fields
 
 
 def main():
@@ -26,6 +26,7 @@ def main():
                 if row['state']!='completed':raise ValueError('Unresolved period failure: '+code+resolution+period)
                 detail_path=source/(code+'_'+resolution+'_'+period+'.json')
                 detail=json.loads(detail_path.read_text(encoding='utf-8'))
+                detail.update(definition_fields(period,resolution))
                 if resolution=='stroke' and detail.get('analysis_eligible',detail['bars']>=3):
                     if detail['replay']['profile']!='stroke_actual_extreme_center_first_retest_v2':raise ValueError('Obsolete stroke replay profile')
                 key=(code,period)
