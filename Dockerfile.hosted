@@ -8,7 +8,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/liangce-tdx liangc
 
 FROM python:3.11-slim
 WORKDIR /app
-ENV PYTHONUNBUFFERED=1 PYTHONUTF8=1 PORT=8810 \
+ENV PYTHONUNBUFFERED=1 PYTHONUTF8=1 PORT=8810 TZ=Asia/Shanghai \
     LIANGCE_HOSTING=hosted-container LIANGCE_EPHEMERAL=1 \
     LIANGCE_ALLOWED_ORIGINS=https://nnn256.github.io,https://liangce-v3-api-production.up.railway.app \
     LIANGCE_RUNTIME=/tmp/liangce-research STOCK_DATA_HOME=/tmp/liangce-data \

@@ -27,7 +27,7 @@ jobs:
       - name: Check pinned TDX bridge starts without a provider connection
         run: |
           docker run -d --name liangce-tdx-bridge --entrypoint /usr/local/bin/liangce-tdx liangce-hosted
-          docker exec liangce-tdx-bridge python -c "from urllib.request import urlopen;import json;data=json.load(urlopen('http://127.0.0.1:18081/api/health',timeout=5));assert data['code']==0"
+          docker exec liangce-tdx-bridge python -c "from urllib.request import urlopen;import json;data=json.load(urlopen('http://127.0.0.1:18081/api/health',timeout=5));assert data['code']==0;assert data['data']['timezone']=='Asia/Shanghai'"
       - name: Check HTTP health, CORS and actual archive
         run: |
           docker run -d --name liangce-hosted -p 8810:8810 liangce-hosted

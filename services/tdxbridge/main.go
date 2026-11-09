@@ -123,6 +123,10 @@ func quotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// The upstream protocol encodes exchange wall-clock fields and constructs
+	// time.Time through time.Local. Containers default to UTC; fix that at
+	// the protocol boundary instead of relabelling timestamps in Python.
+	time.Local = time.FixedZone("Asia/Shanghai", 8*60*60)
 	port := os.Getenv("LIANGCE_TDX_PORT")
 	if port == "" {
 		port = "18081"
@@ -131,7 +135,7 @@ func main() {
 		log.Fatal("invalid loopback port")
 	}
 	http.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		response(w, map[string]any{"status": "ok", "provider": "tdx"}, nil)
+		response(w, map[string]any{"status": "ok", "provider": "tdx", "timezone": "Asia/Shanghai"}, nil)
 	})
 	http.HandleFunc("/api/kline-all/tdx", history)
 	http.HandleFunc("/api/batch-quote", quotes)
