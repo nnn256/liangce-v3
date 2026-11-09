@@ -13,7 +13,7 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements-hosted.txt httpx
-      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider -v
+      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider tests.test_precision_backtest tests.test_stroke_signals -v
         env:
           PYTHONUTF8: '1'
   hosted-container:
@@ -47,6 +47,16 @@ jobs:
           assert health['status']=='ok'
           assert health['compute_limits']=={'workers':1,'queue':2,'max_input_bars':8000}
           assert health['runtime_storage']=='ephemeral'
+          for code in ['sz301551','sz300949']:
+              for resolution in ['stroke','segment']:
+                  with urlopen(base+'/api/research/saved-replays/'+code+'/'+resolution, timeout=10) as response:
+                      saved=json.load(response)
+                  assert saved['saved_replay'] and saved['completed']==11
+                  with urlopen(base+'/api/research/precision-backtests/'+saved['id']+'/day', timeout=10) as response:
+                      detail=json.load(response)
+                  assert len(detail['chart_bars'])==detail['bars']
+                  assert len(detail['chart_context']['macd'])==detail['bars']
+                  assert not detail['strict_original_equivalence_proven']
           request=Request(base+'/api/research/jobs', method='OPTIONS', headers={
               'Origin':'https://nnn256.github.io',
               'Access-Control-Request-Method':'POST',

@@ -58,7 +58,8 @@ def simulate(raw_bars,adjusted_bars,events,daily_closes,actions=(),cost=CostMode
         limit_active=date_rank.get(date,0)>=5
         if pending and pending['not_before_index']<=i:
             side=pending['side'];reason=None
-            if not bar.volume or bar.volume<=0:reason='no_observed_volume'
+            # The current bar's total volume is unknown at its opening fill.
+            if i==0 or not raw_bars[i-1].volume or raw_bars[i-1].volume<=0:reason='no_prior_observed_volume'
             if side=='buy' and limit_active and bar.open>=upper-.005:reason='open_at_upper_limit'
             if side=='sell' and limit_active and bar.open<=lower+.005:reason='open_at_lower_limit'
             if side=='sell' and position and date<=position['entry_date']:reason='T_plus_1_locked'

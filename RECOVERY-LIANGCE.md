@@ -103,3 +103,30 @@
 - 浏览器验证一买锚点可定位，六类入口和11周期矩阵正常。云端进程内存约193MB/512MB，TDX空闲连接45秒关闭以允许免费实例休眠。
 - 最终版本2026.11.09.5同步页面升级脚本，并在健康接口分别列明可用视图与竞价确认缺证；全周期失败行明确失败且不误导航，0仍表示规则未形成。
 - 0c9f190基础接入、b8e2382上海时区修复已在GitHub main；下一动作最终提交/发布→CI/部署→13个可用视图与11周期矩阵/点位/手机验收→保存最终备份与结果。准确性限于声明规则、复权和闭合K线检查，不能承诺未来盈利或原文唯一等价。
+
+## 当前任务：精细笔级/线段方向 + 无线传媒与奥雅全周期真实回测（2026-11-10）
+
+- 最新用户要求：截图明确为无线传媒301551；六类点位精准标注、全部K线运行回测；精细看笔，大方向看段。保留此前授权的GitHub备份/云发布；不得把预测箭头当成已发生信号，不承诺准确率或收益。
+- 当前工作区D:/stock-dashboard，Git HEAD仍753ce8a（上一轮TDX完成），本轮源码修改尚未提交；运行时脏data日志不混入提交。
+- 已做：chanmodel/stroke_signals.py独立笔级代理（Config loose，以实际高低价锚点、同向力度/两中枢趋势/首次回试门控）。StreamingStructure新增segments=False复用逐根因果笔；线段原文门控仍独立，不降低rank>1等证据条件来凑信号。
+- 已做：web/precision_backtest.py后端串行全周期任务，11periods，逐根前缀产信号和事件、保留确认/失效/撤回与延迟，再使用causal_portfolio真实次根开盘/T+1/100股/费用/5bp滑点/涨跌停/前根量约束成交。粗周期事件映射到下一交易日开盘执行。修复原simulator用当前整根bar.volume判开盘资格的前视（现在只用前根成交量）。
+- API新增POST /precision-backtests、GET /precision-backtests/{id}、GET /precision-backtests/{id}/{period}、GET /saved-replays/{code}/{resolution}；detail允许读取data/precision-replays已保存结果。需实际完成后复制结果并生成manifest，当前还没复制。
+- UI新增精细笔级观察/线段大方向/叠加三按钮，stroke默认；实时panel附stroke_model，archive读取也附stroke_model；六类标签显示笔级代理口径；新增PrecisionBacktests表格、进度、11周期各类观察/确认数/交易/收益/回撤，可查看点位和导出。需修好replay detail的显示与portfolio_metrics使用，已基本接好待浏览器验收。
+- 重要真结果：无线传媒日线511根，严格笔35，精细笔45，原段级没有信号；精细笔回放10个规则确认，包含二买锚2026-08-25/首次可知2026-09-09；不能说是原文严格确认。无线5m24000根精细回放386对象318规则确认（计数 first_buy44 second_buy24 third_buy119 first_sell29 second_sell13 third_sell157），耗时231s→PriceRanges sparse精确范围查询优化后126s，结果完全一致。
+- 已测试：45项Python接口/新笔级prefix不重写、range直接对照、同bar总量不影响开盘成交等全部通过；前端类型与build通过。测试文件test_precision_backtest.py/test_stroke_signals.py已加入CI待发布。图表笔加粗/独立级别/当前状态标注，不把末端折线预测成1/2点。
+- 服务：新本地完整验收8836，PID44012，tools exec session54326，LIANGCE_TDX_API=http://127.0.0.1:18083，LIANGCE_RUNTIME=D:/stock-dashboard/.runtime/precision-acceptance。服务是在本轮早段启动，后续源码部分不热重载；目前长任务进行中，先别重启。
+- 真实全量runner：.runtime/run_all_precision.py正在exec session30664运行，依次等待4个后端job（无线stroke→奥雅stroke→无线segment→奥雅segment），每任务11周期。结果导出.runtime/precision-acceptance-export/*；runs.json完成摘要逐步保存。
+- 任务1无线stroke id84b01be20c914a49b2a6778b9390aeab，11/11完成。任务2奥雅stroke ida8de951d27ec40159e7d4ad21054a5eb，上次进行5m，已过1m。任务3/4id待runner生成。用户需要实际全部跑完，不可用当前period-scan结果冒充回测。
+- 第一真实成交结果：无线1m22320根笔级59笔，14胜，胜率23.7288%，净收益-1.0503%，最大回撤-3.1883%；真实结果差不可隐藏或调阈值迎合“精准”。
+- 当前前端已构建，可用agent-browser sessionliangce-fine-test页面http://127.0.0.1:8836/?symbol=sz301551&period=day&data=live；pending tools exec session14919等待笔级二买显示。不要只等文本就称chart渲染成功；核验svg真实label+点位与确认日期。
+- 问题/未完：优化原段回放较慢4任务约多分钟；等待runner时继续独立UI/测试/文档。服务器当前加载早版代码，最终等4任务全部完成再重启应用新validation/档读取。
+- 下一动作：poll session30664与14919→完成UI/避免面板切周期清掉replayDetail（已移除fetch清除，activePanel按symbol/period/resolution匹配）→复制实际4job到data/precision-replays/{id}，manifest和每个detail输入hash/时间/数量验证→加入Docker COPY保存回测→重启8836验证已保存结果和笔段切换/手机→写真实回测报告CSV/JSON→版本2026.11.10.1提交备份发布Railway+Pages→云端真实图形/加载回测验收。
+- 新增代码错误已纠正：precision模块在web不是chanmodel；去掉了无用rebase函数中错误构造；npm/pyscript工作目录错一轮已重跑成功。45通过后新增saved-replays需补针对读取验证。
+
+
+## 最终精细笔级回放检查点（2026-11-10）
+- 旧笔级v1数字作废；最终profile stroke_actual_extreme_center_first_retest_v2已在两股全部11周期重跑。无线最终id c91e98e2895a46e19aba467d5e593297；奥雅最终id95d4d8fe19154749923b5280ba8b089b。线段保留47bee78192614512831a3f2bb3e399de/0cb11d3770504cb19e08dcd30d16eb49。
+- scripts/publish_replay_artifacts.py实际核验44输入哈希、1462确认极值和934成交时间，保存48份gzip约22.6MB及manifest于data/precision-replays。结构图层/MACD/ABCD随历史输入保存，防止当前窗口错配。详报artifacts/precision-backtest/README.md及CSV。
+- 最终真实收益：无线日线-2.5376%、5分-24.0605%；奥雅日线+92.9327%（回撤-29.72%）、5分+18.4127%。代理规则确认不冒充原文全部等价，不声称盈利或准确率保证。
+- 47项最小依赖Python测试通过，TS及构建通过；本地最新服务8836 PID3824 exec session88666。浏览器session liangce-precision-final已验精细笔级、加载日线历史、6确认与独立段模式；PNG图导出已实际生成。
+- 下一动作：完成跨周期/手机/browser验收→提交只含任务代码与已核验结果→推送main→CI及Pages→既有Railway实际部署→公网回测与图表核验→备份/交付。长期授权用户指定Railway与GitHub未变；不混运行时data日志。

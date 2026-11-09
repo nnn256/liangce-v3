@@ -41,5 +41,5 @@ export function displaySignals(panel:Panel|null):Evidence[]{
 
 export function signalStatus(point:Evidence){
  const ended=point.state==='invalidated'?'已失效':point.state==='withdrawn'?'已撤回':'';
- return (point.has_confirmation||point.event==='confirmed'?(point.confirmation_semantics?.startsWith('current_observation')?'当前证据确认':'历史确认'): '候选')+(ended?' · '+ended:'');
+ return (point.has_confirmation||point.event==='confirmed'?(point.confirmation_semantics?.startsWith('stroke_rule')?'笔级规则确认':point.confirmation_semantics?.startsWith('current_observation')?'当前证据确认':'历史确认'): '候选')+(ended?' · '+ended:'');
 }

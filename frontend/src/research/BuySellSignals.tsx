@@ -2,8 +2,8 @@ import {ChevronLeft,ChevronRight,LocateFixed} from 'lucide-react';
 import {CLASSES,type Evidence} from './types';
 import {SIGNAL_CLASSES,signalStatus} from './signalDisplay';
 
-interface Props {signals:Evidence[];selected:string|null;focusedId?:string;diagnostics?:Record<string,Evidence>;onSelect:(signal:Evidence)=>void;onClass:(kind:string|null)=>void;showAll:()=>void}
-export function BuySellSignals({signals,selected,focusedId,diagnostics,onSelect,onClass,showAll}:Props){
+interface Props {signals:Evidence[];selected:string|null;focusedId?:string;diagnostics?:Record<string,Evidence>;resolution?:string;onSelect:(signal:Evidence)=>void;onClass:(kind:string|null)=>void;showAll:()=>void}
+export function BuySellSignals({signals,selected,focusedId,diagnostics,resolution='segment',onSelect,onClass,showAll}:Props){
  const group=signals.filter(point=>!selected||point.class===selected);
  const focus=(offset:number)=>{
   if(!group.length)return;
@@ -11,7 +11,7 @@ export function BuySellSignals({signals,selected,focusedId,diagnostics,onSelect,
   onSelect(group[index<0?(offset>0?0:group.length-1):(index+(offset>0?1:-1)+group.length)%group.length]);
  };
  return <section className="lc-buy-sell" aria-label="六类买卖点">
-  <div className="lc-buy-sell-heading"><b>买卖点</b><span>价格锚点标注 · 菱形为实际确认时刻</span><button onClick={showAll}>显示全部</button></div>
+  <div className="lc-buy-sell-heading"><b>买卖点</b><span>{resolution==='stroke'?'笔级观察 · 代理规则':'线段/递归走势级'} · 锚点与确认时刻分开</span><button onClick={showAll}>显示全部</button></div>
   <div className="lc-six-signals">{SIGNAL_CLASSES.map(kind=>{
    const points=signals.filter(point=>point.class===kind),confirmed=points.filter(point=>point.has_confirmation).length;
    return <button key={kind} data-signal-class={kind} aria-pressed={selected===kind} className={(kind.endsWith('buy')?'buy':'sell')+(selected===kind?' selected':'')} onClick={()=>{onClass(kind);if(points.length)onSelect(points.at(-1)!)}}>

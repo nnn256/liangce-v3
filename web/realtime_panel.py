@@ -68,11 +68,13 @@ def make_panel(code,period,candles,now,metadata=None):
     from chanmodel.signals import macd
     closed=[bar for bar in candles if bar.closed]
     if not candles:raise HTTPException(503,'上游未返回真实K线，无法计算结构')
-    if len(closed)<3:raise HTTPException(503,'上游少于3根已收盘K线，无法计算结构；不生成假买卖点')
+    if not closed:raise HTTPException(503,'尚无已收盘K线，无法计算结构；不生成假买卖点')
     metadata=metadata or {'source':'stock-dashboard/market_gateway','adjustment':'provider_unspecified',
                            'price_unit':'CNY','volume_unit':'shares','scope':'provider_recent_history'}
     digest=hashlib.sha256(json.dumps([[b.closed_at,b.open,b.high,b.low,b.close,b.volume] for b in closed]).encode()).hexdigest()
     report=analyze_complete(code,period,closed,now.isoformat(),digest)
+    from chanmodel.stroke_signals import snapshot as fine_snapshot
+    fine=fine_snapshot(closed)
     confirmations=[];records=[];report['as_of_index']=len(closed)-1
     eligible=metadata.get('split_adjustment_verified') is True
     for point in report['signals']:
@@ -109,6 +111,7 @@ def make_panel(code,period,candles,now,metadata=None):
     name=next((item['name'] for item in local_symbols() if item['symbol']==code),code)
     observed=min(datetime.fromisoformat(candles[-1].closed_at),now).isoformat()
     return {'schema':'liangce.research.v1','symbol':code,'name':name,'period':period,'label':period,
+            'resolution':'segment','stroke_model':fine,
             'kind':'candles','bars':bars,
             'coverage':{'count':len(bars),'closed_count':len(closed),'forming_count':len(bars)-len(closed),
                         'first':bars[0]['date_cn'],'last':observed[:16].replace('T',' '),'input_sha256':digest,

@@ -26,8 +26,9 @@ def sign(obj):
 
 
 class StreamingStructure:
-    def __init__(self,config=CONFIG):
+    def __init__(self,config=CONFIG,*,segments=True):
         self.config=config;self.bars=[];self.merged=[];self.fractals=[];self.strokes=[];self.segments=[];self.histogram=[]
+        self.calculate_segments=segments
         self.fast=self.slow=None;self.dea=0.;self.stroke_sig=None;self.completed_sig=None;self.range_cache={}
         self.structure_rebuilds=0;self.stroke_rebuilds=0;self.segment_rebuilds=0
 
@@ -62,6 +63,7 @@ class StreamingStructure:
         self.strokes=strokes
         if signature==self.stroke_sig:return False
         self.stroke_sig=signature;self.segment_rebuilds+=1
+        if not self.calculate_segments:return True
         self.segments=build_segments(strokes)
         for segment in self.segments:
             key=(segment['start'],segment['end'])

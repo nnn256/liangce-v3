@@ -53,7 +53,13 @@ def read_snapshot(code,period):
     if not path.is_file():raise HTTPException(404,'该股票/周期没有已归档研究，请连接后端并重新计算')
     compressed=path.read_bytes();entry=next((x for x in manifest()['files'] if x['file']==path.name),None)
     if entry and hashlib.sha256(compressed).hexdigest()!=entry['sha256']:raise HTTPException(500,'研究归档校验失败')
-    return json.loads(gzip.decompress(compressed))
+    panel=json.loads(gzip.decompress(compressed))
+    if panel.get('kind')=='candles':
+        from chanmodel.model import Candle
+        from chanmodel.stroke_signals import snapshot
+        bars=[Candle(i,*[row[key] for key in ['open','high','low','close']],row['date_cn'].replace(' ','T')+':00+08:00',row['volume'],row.get('is_closed',True)) for i,row in enumerate(panel['bars']) if row.get('is_closed',True)]
+        if len(bars)>=3:panel['stroke_model']=snapshot(bars)
+    return panel
 
 
 def check_write(request):
@@ -150,6 +156,35 @@ def signal_periods(code:str):
     except ValueError as error:raise HTTPException(422,str(error))
     from web.realtime_panel import period_overview
     return JSONResponse(period_overview(code),headers={'Cache-Control':'no-store'})
+
+
+@router.post('/precision-backtests')
+def precision_backtests(payload:dict,request:Request):
+    check_write(request)
+    try:code=symbol(payload.get('symbol',''));resolution=payload.get('resolution','segment');periods=payload.get('periods')
+    except (ValueError,TypeError) as error:raise HTTPException(422,str(error))
+    from web.precision_backtest import start
+    return JSONResponse(start(code,resolution,periods),status_code=202,headers={'Cache-Control':'no-store'})
+
+
+@router.get('/precision-backtests/{ident}')
+def precision_status(ident:str):
+    from web.precision_backtest import status
+    return JSONResponse(status(ident),headers={'Cache-Control':'no-store'})
+
+
+@router.get('/saved-replays/{code}/{resolution}')
+def saved_replay(code:str,resolution:str):
+    try:code=symbol(code)
+    except ValueError as error:raise HTTPException(422,str(error))
+    from web.precision_backtest import available
+    return JSONResponse(available(code,resolution),headers={'Cache-Control':'no-store'})
+
+
+@router.get('/precision-backtests/{ident}/{period}')
+def precision_detail(ident:str,period:str):
+    from web.precision_backtest import detail
+    return JSONResponse(detail(ident,period),headers={'Cache-Control':'no-store'})
 
 
 quote_cache=OrderedDict()
