@@ -386,10 +386,10 @@ def fetch_level1_indices(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
     return indices
 
 
-def fetch_symbol_klines(symbol: str, period: str = '1D') -> Dict[str, Any]:
+def fetch_symbol_klines(symbol: str, period: str = '1D', *, refresh: bool = False) -> Dict[str, Any]:
     """获取指定标的的 K 线或分时图序列 (TDX 缓存 + 腾讯分时)"""
     _ck = f"{symbol}:{period}"
-    _hit = _kline_cache_get(_ck)
+    _hit = None if refresh else _kline_cache_get(_ck)
     if _hit is not None:
         return _hit
     tx_code = _symbol_to_tx_code(symbol)
@@ -428,8 +428,8 @@ def fetch_symbol_klines(symbol: str, period: str = '1D') -> Dict[str, Any]:
             'prevClose': pre_close,
             'intraday': pts,
         })
-    elif period in ('5m', '15m', '30m', '60m'):
-        m_map = {'5m': 'm5', '15m': 'm15', '30m': 'm30', '60m': 'm60'}
+    elif period in ('1m', '5m', '15m', '30m', '60m'):
+        m_map = {'1m': 'm1', '5m': 'm5', '15m': 'm15', '30m': 'm30', '60m': 'm60'}
         p = m_map.get(period, 'm5')
         url = f'https://ifzq.gtimg.cn/appstock/app/kline/mkline?param={tx_code},{p},,160'
         try:

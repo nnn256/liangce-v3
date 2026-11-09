@@ -10,6 +10,7 @@ const COLORS=['#329b8d','#8972b2','#b98b40','#507caf'];
 export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:p,layers,onEvidence,focus,fullScreen},ref){
  const mainEl=useRef<HTMLDivElement>(null),volEl=useRef<HTMLDivElement>(null),macdEl=useRef<HTMLDivElement>(null),svgEl=useRef<SVGSVGElement>(null);
  const handles=useRef<any>(null),dataRef=useRef(p);dataRef.current=p;
+ const savedViewport=useRef<any>(null);
  const [geometry,setGeometry]=useState<any>(null),[hover,setHover]=useState<Evidence|null>(null);
  const [original,setOriginal]=useState(''),[rank,setRank]=useState(0);
  const line=p.kind==='line',bars:any[]=line?(p.points||[]):(p.bars||[]);
@@ -33,10 +34,13 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
   const resize=new ResizeObserver(()=>{for(const [i,el]of [mainEl.current,volEl.current,macdEl.current].entries()){if(el)charts[i].resize(el.clientWidth,el.clientHeight)}update()});[mainEl.current,volEl.current,macdEl.current].forEach(x=>x&&resize.observe(x));
   const recent=()=>main.timeScale().setVisibleLogicalRange({from:Math.max(-1,bars.length-(window.innerWidth<600?90:220)),to:bars.length+6});
   const latest=points.at(-1);
-  if(!line&&latest&&layers.has('signals'))main.timeScale().setVisibleLogicalRange({from:Math.max(-1,latest.anchor-100),to:Math.min(bars.length+6,latest.anchor+100)});
+  const viewKey=p.symbol+':'+p.period+':'+p.source_kind,previous=savedViewport.current;
+  if(previous?.key===viewKey&&previous.range&&!previous.follow)main.timeScale().setVisibleLogicalRange(previous.range);
+  else if(p.source_kind==='live_market_panel')recent();
+  else if(!line&&latest&&layers.has('signals'))main.timeScale().setVisibleLogicalRange({from:Math.max(-1,latest.anchor-100),to:Math.min(bars.length+6,latest.anchor+100)});
   else recent();
   handles.current={charts,main,price,recent,update};update();
-  return()=>{disposed=true;cancelAnimationFrame(raf);resize.disconnect();charts.forEach(c=>c.remove());handles.current=null;setGeometry(null)};
+  return()=>{const range=main.timeScale().getVisibleLogicalRange();savedViewport.current={key:viewKey,range,follow:range?range.to>=bars.length-2:true};disposed=true;cancelAnimationFrame(raf);resize.disconnect();charts.forEach(c=>c.remove());handles.current=null;setGeometry(null)};
  },[p]);
  useEffect(()=>{handles.current?.update()},[layers,original,rank,fullScreen]);
  useEffect(()=>{if(!focus||!handles.current)return;setHover(null);const anchor=focus.anchor??focus.observed_index??focus.source??focus.end??0;const end=focus.event==='confirmed'?Math.max(anchor,focus.observed_index):anchor;const start=CLASSES[focus.class]?Math.max(0,anchor-80):focus.point?.terminal_range?.[0]??focus.start??Math.max(0,anchor-90);handles.current.main.timeScale().setVisibleLogicalRange({from:Math.max(-1,start-25),to:Math.min(bars.length+6,end+70)});handles.current.update()},[focus]);

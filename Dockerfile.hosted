@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements-hosted.txt
 COPY chanmodel ./chanmodel
 COPY core ./core
 COPY scripts/data_feed.py scripts/data_layer.py scripts/stock_dashboard.py scripts/ths_extractor.py ./scripts/
-COPY web/hosted_server.py web/research_api.py web/market_gateway.py ./web/
+COPY web/hosted_server.py web/research_api.py web/market_gateway.py web/realtime_panel.py ./web/
 COPY web/dist ./web/dist
 COPY data/research ./data/research
 COPY data/stock_names.json ./data/stock_names.json

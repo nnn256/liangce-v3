@@ -74,6 +74,8 @@ def health():
             'hosting':os.environ.get('LIANGCE_HOSTING','local'),
             'compute_limits':{'workers':WORKERS,'queue':QUEUE_LIMIT,'max_input_bars':MAX_COMPUTE_BARS},
             'runtime_storage':'ephemeral' if os.environ.get('LIANGCE_EPHEMERAL')=='1' else 'local',
+            'live_chart_enabled':True,'live_chart_periods':['1m','5m','15m','30m','60m','day','week','month'],
+            'refresh_seconds':{'quotes_trading':10,'chart_trading':15,'outside_trading_hours':300},
             'frontend_url':'https://nnn256.github.io/liangce-v3/',
             'engine':'original_clause_gated_causal_confirmation_v1','execution_allowed':False}
 
@@ -129,6 +131,14 @@ def quote(code:str):
             'meaning':'行情报价与研究快照分别显示；刷新报价不改变历史确认'}
 
 
+@router.get('/live-panel/{code}/{period}')
+def realtime_panel(code:str,period:str):
+    try:code=symbol(code);validate_period(period)
+    except ValueError as error:raise HTTPException(422,str(error))
+    from web.realtime_panel import live_panel
+    return JSONResponse(live_panel(code,period),headers={'Cache-Control':'no-store'})
+
+
 quote_cache=OrderedDict()
 quote_lock=threading.Lock()
 
@@ -166,7 +176,7 @@ def quotes(symbols:str):
     if not 1<=len(parts)<=80 or len(symbols)>1200:raise HTTPException(422,'每次最多查询80只股票')
     try:codes=list(dict.fromkeys(symbol(x) for x in parts))
     except ValueError as error:raise HTTPException(422,str(error))
-    now=datetime.now(CN);active=quote_session(now);ttl=15 if active else 300
+    now=datetime.now(CN);active=quote_session(now);ttl=5 if active else 300
     failure=None
     # Serialize cache misses so concurrent visitors share one upstream batch.
     with quote_lock:
@@ -188,7 +198,7 @@ def quotes(symbols:str):
     if not results:raise HTTPException(503,'行情源暂不可用，请稍后重试；未使用演示报价')
     return {'quotes':results,'missing':[code for code in codes if code not in results],
             'market_session':'trading_hours' if active else 'outside_trading_hours',
-            'refresh_after_seconds':20 if active else 300,'error':failure,
+            'refresh_after_seconds':10 if active else 300,'error':failure,
             'received_at':datetime.now(CN).isoformat(),'meaning':'休市保留最近交易报价；报价时间与结构快照时间分别记录'}
 
 
@@ -219,14 +229,8 @@ def live_bars(code,period):
     import market_gateway as mg
     result=mg.fetch_symbol_klines(code[2:]+'.'+code[:2].upper(),NATIVE[period]);items=result.get('klines',[])
     if len(items)<3:raise ValueError('上游未返回足够的真实K线')
-    now=datetime.now(CN);out=[]
-    for row in items:
-        stamp=str(row['time']).replace(' ','T')
-        if len(stamp)==10:stamp+='T15:00:00'
-        dt=datetime.fromisoformat(stamp)
-        if dt.tzinfo is None:dt=dt.replace(tzinfo=CN)
-        if dt>now:continue
-        out.append(Candle(len(out),*[float(row[k]) for k in ['open','high','low','close']],dt.isoformat(),float(row.get('volume',0))*100,True))
+    from web.realtime_panel import provider_bars
+    out=provider_bars(items,period,datetime.now(CN))
     # The legacy gateway doesn't certify adjustment consistently across sources.
     # Keep its source quality visible and never publish confirmed original-rule signals.
     return out,{'source':'stock-dashboard/market_gateway','adjustment':'provider_unspecified','volume_unit':'upstream_hands_converted_to_shares',
