@@ -35,6 +35,9 @@ def main():
         return
 
     os.chdir(ROOT)
+    tdx_binary=ROOT/'.runtime/tdx-api-build/liangce-tdx.exe'
+    if tdx_binary.is_file() and not os.environ.get('LIANGCE_TDX_API'):
+        os.environ.setdefault('LIANGCE_TDX_BINARY',str(tdx_binary))
     os.environ.update(LIANGCE_HOSTING='local-research',LIANGCE_EPHEMERAL='0',
                       LIANGCE_ALLOWED_ORIGINS=origin,LIANGCE_RUNTIME=str(ROOT/'.runtime/local-research'),
                       LIANGCE_WORKERS='1',LIANGCE_QUEUE_LIMIT='2',LIANGCE_MAX_COMPUTE_BARS='30000',

@@ -21,6 +21,7 @@ export function displaySignals(panel:Panel|null):Evidence[]{
   const item=items.get(id)||{...confirmation.point,id,class:confirmation.class,rank:confirmation.rank,side:confirmation.side,anchor:confirmation.anchor,price:confirmation.price};
   item.confirmed_at=confirmation.confirmed_at||confirmation.observed_at;
   item.confirmed_index=confirmation.observed_index;item.has_confirmation=true;
+  item.confirmation_semantics=confirmation.confirmation_semantics;
   item.confirmation=confirmation;items.set(id,item);
  }
  for(const record of panel.confirmation_records||[]){
@@ -40,5 +41,5 @@ export function displaySignals(panel:Panel|null):Evidence[]{
 
 export function signalStatus(point:Evidence){
  const ended=point.state==='invalidated'?'已失效':point.state==='withdrawn'?'已撤回':'';
- return (point.has_confirmation||point.event==='confirmed'?'历史确认': '候选')+(ended?' · '+ended:'');
+ return (point.has_confirmation||point.event==='confirmed'?(point.confirmation_semantics?.startsWith('current_observation')?'当前证据确认':'历史确认'): '候选')+(ended?' · '+ended:'');
 }

@@ -16,4 +16,5 @@ assert.equal(signalStatus(first),'候选 · 已失效');
 const confirmed=signals.find(point=>point.has_confirmation&&point.state==='invalidated')!;
 assert.equal(signalStatus(confirmed),'历史确认 · 已失效');
 assert(confirmed.confirmed_index>confirmed.anchor,'Price anchors must not be confused with the time confirmation became known');
+assert.equal(signalStatus({has_confirmation:true,confirmation_semantics:'current_observation_only; earliest_historical_confirmation_not_claimed'}),'当前证据确认');
 console.log('Real archive: historical signal reconciliation, confirmation timing and six-class counts passed.');

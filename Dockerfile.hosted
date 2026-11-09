@@ -1,3 +1,11 @@
+FROM golang:1.24-bookworm AS tdx
+WORKDIR /tdx-root
+ADD https://codeload.github.com/oficcejo/tdx-api/tar.gz/ea07dccb67aeb92ebde851ac31503b4bf457a318 /tmp/tdx.tar.gz
+RUN tar -xzf /tmp/tdx.tar.gz --strip-components=1 -C /tdx-root
+COPY services/tdxbridge/main.go /tdx-root/web/liangce_bridge.go
+WORKDIR /tdx-root/web
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/liangce-tdx liangce_bridge.go
+
 FROM python:3.11-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONUTF8=1 PORT=8810 \
@@ -5,13 +13,14 @@ ENV PYTHONUNBUFFERED=1 PYTHONUTF8=1 PORT=8810 \
     LIANGCE_ALLOWED_ORIGINS=https://nnn256.github.io,https://liangce-v3-api-production.up.railway.app \
     LIANGCE_RUNTIME=/tmp/liangce-research STOCK_DATA_HOME=/tmp/liangce-data \
     LIANGCE_WORKERS=1 LIANGCE_QUEUE_LIMIT=2 LIANGCE_MAX_COMPUTE_BARS=8000 \
-    LIANGCE_READONLY=0
+    LIANGCE_READONLY=0 LIANGCE_TDX_BINARY=/usr/local/bin/liangce-tdx
+COPY --from=tdx /out/liangce-tdx /usr/local/bin/liangce-tdx
 COPY requirements-hosted.txt ./
 RUN pip install --no-cache-dir -r requirements-hosted.txt
 COPY chanmodel ./chanmodel
 COPY core ./core
 COPY scripts/data_feed.py scripts/data_layer.py scripts/stock_dashboard.py scripts/ths_extractor.py ./scripts/
-COPY web/hosted_server.py web/research_api.py web/market_gateway.py web/realtime_panel.py ./web/
+COPY web/hosted_server.py web/research_api.py web/market_gateway.py web/realtime_panel.py web/tdx_provider.py ./web/
 COPY web/dist ./web/dist
 COPY data/research ./data/research
 COPY data/stock_names.json ./data/stock_names.json

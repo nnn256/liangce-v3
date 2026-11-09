@@ -13,7 +13,7 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements-hosted.txt httpx
-      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel -v
+      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider -v
         env:
           PYTHONUTF8: '1'
   hosted-container:
@@ -24,6 +24,10 @@ jobs:
         run: docker build -f Dockerfile.hosted -t liangce-hosted .
       - name: Check gateway dependencies in the actual image
         run: docker run --rm liangce-hosted python -c "from web.hosted_server import app; import market_gateway"
+      - name: Check pinned TDX bridge starts without a provider connection
+        run: |
+          docker run -d --name liangce-tdx-bridge --entrypoint /usr/local/bin/liangce-tdx liangce-hosted
+          docker exec liangce-tdx-bridge python -c "from urllib.request import urlopen;import json;data=json.load(urlopen('http://127.0.0.1:18081/api/health',timeout=5));assert data['code']==0"
       - name: Check HTTP health, CORS and actual archive
         run: |
           docker run -d --name liangce-hosted -p 8810:8810 liangce-hosted

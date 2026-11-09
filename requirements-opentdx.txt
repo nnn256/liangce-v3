@@ -1,0 +1,2 @@
+# Optional separate Python3.12+ environment. REST TDX bridge is the cloud default.
+opentdx @ git+https://github.com/acb6104/opentdx.git@f2bcc1501c10be1771d3b17483770ee3fcc91933

@@ -74,7 +74,8 @@ def health():
             'hosting':os.environ.get('LIANGCE_HOSTING','local'),
             'compute_limits':{'workers':WORKERS,'queue':QUEUE_LIMIT,'max_input_bars':MAX_COMPUTE_BARS},
             'runtime_storage':'ephemeral' if os.environ.get('LIANGCE_EPHEMERAL')=='1' else 'local',
-            'live_chart_enabled':True,'live_chart_periods':['1m','5m','15m','30m','60m','day','week','month'],
+            'live_chart_enabled':True,'live_chart_periods':['1m','5m','15m','30m','60m','day','5d','week','month','quarter','year'],
+            'tdx_configured':bool(os.environ.get('LIANGCE_TDX_API') or os.environ.get('LIANGCE_TDX_BINARY') or os.environ.get('LIANGCE_OPENTDX_PYTHON')),
             'refresh_seconds':{'quotes_trading':10,'chart_trading':15,'outside_trading_hours':300},
             'frontend_url':'https://nnn256.github.io/liangce-v3/',
             'engine':'original_clause_gated_causal_confirmation_v1','execution_allowed':False}
@@ -137,6 +138,14 @@ def realtime_panel(code:str,period:str):
     except ValueError as error:raise HTTPException(422,str(error))
     from web.realtime_panel import live_panel
     return JSONResponse(live_panel(code,period),headers={'Cache-Control':'no-store'})
+
+
+@router.get('/period-signals/{code}')
+def signal_periods(code:str):
+    try:code=symbol(code)
+    except ValueError as error:raise HTTPException(422,str(error))
+    from web.realtime_panel import period_overview
+    return JSONResponse(period_overview(code),headers={'Cache-Control':'no-store'})
 
 
 quote_cache=OrderedDict()

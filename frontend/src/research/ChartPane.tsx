@@ -32,11 +32,10 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
   charts.forEach(c=>c.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(!r||sync)return;sync=true;charts.filter(o=>o!==c).forEach(o=>o.timeScale().setVisibleLogicalRange(r));sync=false;update()}));
   main.subscribeCrosshairMove(param=>{const found=param.seriesData.get(price) as any;setHover(found?{...found,date:typeof param.time==='number'?new Date(param.time*1000).toISOString().replace('T',' ').slice(0,16):''}:null)});
   const resize=new ResizeObserver(()=>{for(const [i,el]of [mainEl.current,volEl.current,macdEl.current].entries()){if(el)charts[i].resize(el.clientWidth,el.clientHeight)}update()});[mainEl.current,volEl.current,macdEl.current].forEach(x=>x&&resize.observe(x));
-  const recent=()=>main.timeScale().setVisibleLogicalRange({from:Math.max(-1,bars.length-(window.innerWidth<600?90:220)),to:bars.length+6});
+  const recent=()=>main.timeScale().setVisibleLogicalRange({from:Math.max(-1,bars.length-(p.display_session_count?240*p.display_session_count:window.innerWidth<600?90:220)),to:bars.length+6});
   const latest=points.at(-1);
   const viewKey=p.symbol+':'+p.period+':'+p.source_kind,previous=savedViewport.current;
   if(previous?.key===viewKey&&previous.range&&!previous.follow)main.timeScale().setVisibleLogicalRange(previous.range);
-  else if(p.source_kind==='live_market_panel')recent();
   else if(!line&&latest&&layers.has('signals'))main.timeScale().setVisibleLogicalRange({from:Math.max(-1,latest.anchor-100),to:Math.min(bars.length+6,latest.anchor+100)});
   else recent();
   handles.current={charts,main,price,recent,update};update();
@@ -50,7 +49,7 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
    ctx.font='11px system-ui';ctx.fillText('量测 v3 · TradingView Lightweight Charts · 确认可能随后失效',20,result.height-8);const a=document.createElement('a');a.href=result.toDataURL('image/png');a.download=`量测v3_${p.symbol}_${p.period}.png`;document.body.appendChild(a);a.click();a.remove();
  }}),[p]);
  const shapes:React.ReactNode[]=[];let id=0;
- if(geometry&&!line){const {x,y,pw,height,range}=geometry,lo=Math.floor(range.from),hi=Math.ceil(range.to);const inView=(s:any)=>s.end>=lo&&s.start<=hi;const spot=(i:number)=>i>=lo&&i<=hi;
+ if(geometry&&(!line||p.structural_ohlc)){const {x,y,pw,height,range}=geometry,lo=Math.floor(range.from),hi=Math.ceil(range.to);const inView=(s:any)=>s.end>=lo&&s.start<=hi;const spot=(i:number)=>i>=lo&&i<=hi;
   const coords=(values:any[])=>values.every(v=>v!==null&&Number.isFinite(v));
   const txt=(xx:number,yy:number,text:string,color:string,size=11)=>coords([xx,yy])&&<text key={'t'+id++} x={Math.max(4,Math.min(pw-65,xx))} y={Math.max(15,Math.min(height-5,yy))} fill={color} fontSize={size} fontFamily="system-ui,Microsoft YaHei" stroke="white" strokeWidth="3" paintOrder="stroke">{text}</text>;
   const path=(s:any,color:string,width:number,dash?:string)=>{if(!inView(s))return;const a=x(s.start),b=x(s.end),c=y(s.start_price),d=y(s.end_price);if(coords([a,b,c,d]))shapes.push(<line key={'l'+id++} x1={a} x2={b} y1={c} y2={d} stroke={color} strokeWidth={width} strokeDasharray={dash} onClick={()=>onEvidence(s)}><title>{s.id} · {s.state}</title></line>)};
@@ -62,7 +61,7 @@ export const ChartPane=forwardRef<ChartActions,Props>(function ChartPane({panel:
    if(!spot(s.anchor))continue;
    const xx=x(s.anchor),yy=y(s.price),color=s.side==='buy'?'#b44461':'#267f82';if(!coords([xx,yy]))continue;
    const ended=s.state==='invalidated'||s.state==='withdrawn',selected=focus?.id===s.id;
-   const label=`${CLASSES[s.class]} L${s.rank} ${s.has_confirmation?'历史确认':'候选'}${ended?'·'+(s.state==='invalidated'?'失效':'撤回'):''}`;
+   const label=`${CLASSES[s.class]} L${s.rank} ${s.has_confirmation?'已确认':'候选'}${ended?'·'+(s.state==='invalidated'?'失效':'撤回'):''}`;
    const width=Math.min(pw-8,Math.max(90,label.length*7.2)),left=Math.max(4,Math.min(pw-width-4,xx-width/2));
    const top=Math.max(8,Math.min(height-27,yy+(s.side==='buy'?24+(lane%3)*22:-42-(lane%3)*22)));lane++;
    shapes.push(<g key={'s'+id++} data-signal-class={s.class} data-signal-id={s.id} data-signal-status={signalStatus(s)} role="button" aria-label={`${label} ${fmt(s.price)}`} tabIndex={0} onClick={()=>onEvidence(s)} onKeyDown={e=>{if(e.key==='Enter')onEvidence(s)}} style={{cursor:'pointer'}}>
