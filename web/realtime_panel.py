@@ -136,13 +136,13 @@ def make_panel(code,period,candles,now,metadata=None):
             'backtest_scope_note':'实时确认是当前证据可见时刻，不倒填为历史最早确认；历史因果确认与成交回测请切换历史研究'}
 
 
-def live_panel(code,period):
+def live_panel(code,period,*,refresh=False):
     if period not in NATIVE:raise HTTPException(422,'分时/集合竞价价格快照不具备连续OHLC证据；可查看对应数据，买卖点需选择K线周期')
     now=datetime.now(CN);ttl=10 if trading_hours(now) else 60
     key=(code,period)
     with cache_lock:
         entry=cache.get(key)
-        if entry and time.monotonic()-entry[0]<ttl:
+        if entry and not refresh and time.monotonic()-entry[0]<ttl:
             cache.move_to_end(key);return entry[1]
         import market_gateway as mg
         try:

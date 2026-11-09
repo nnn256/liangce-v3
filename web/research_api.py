@@ -143,11 +143,11 @@ def quote(code:str):
 
 
 @router.get('/live-panel/{code}/{period}')
-def realtime_panel(code:str,period:str):
+def realtime_panel(code:str,period:str,refresh:bool=False):
     try:code=symbol(code);validate_period(period)
     except ValueError as error:raise HTTPException(422,str(error))
     from web.realtime_panel import live_panel
-    return JSONResponse(live_panel(code,period),headers={'Cache-Control':'no-store'})
+    return JSONResponse(live_panel(code,period,refresh=refresh),headers={'Cache-Control':'no-store'})
 
 
 @router.get('/period-signals/{code}')

@@ -4,16 +4,10 @@ import {downloadJSON,request} from './api';
 import {CLASSES,PERIODS,percent,type Evidence} from './types';
 import {SIGNAL_CLASSES} from './signalDisplay';
 
-interface Props {symbol:string;resolution:'stroke'|'segment';period:string;inputHash?:string;onDetail:(detail:Evidence)=>void}
-export function PrecisionBacktests({symbol,resolution,period,inputHash,onDetail}:Props){
+interface Props {symbol:string;resolution:'stroke'|'segment';onDetail:(detail:Evidence)=>void}
+export function PrecisionBacktests({symbol,resolution,onDetail}:Props){
  const [job,setJob]=useState<Evidence|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[opening,setOpening]=useState('');
  useEffect(()=>{setJob(null);setError('');const control=new AbortController();request('/api/research/saved-replays/'+symbol+'/'+resolution,{},control.signal,15000).then(next=>{if(!control.signal.aborted)setJob(next)}).catch(()=>{});return()=>control.abort()},[symbol,resolution]);
- useEffect(()=>{
-  const row=job?.symbol===symbol&&job?.resolution===resolution&&job?.rows?.find((item:Evidence)=>item.period===period&&item.input_sha256===inputHash);
-  if(!row||!inputHash)return;
-  const control=new AbortController();request(row.detail_url,{},control.signal,60000).then(detail=>{if(!control.signal.aborted)onDetail(detail)}).catch(()=>{});
-  return()=>control.abort();
- },[job?.id,symbol,resolution,period,inputHash]);
  useEffect(()=>{
   if(!job?.id||!['queued','running'].includes(job.state))return;
   const control=new AbortController();let timer:ReturnType<typeof setTimeout>|undefined;

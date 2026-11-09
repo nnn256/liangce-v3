@@ -45,6 +45,17 @@ class RealtimePanelTests(unittest.TestCase):
         self.assertEqual(changed['bars'][-1]['close'],20.5)
         self.assertEqual(self.gateway.fetch_symbol_klines.call_count,2)
 
+    def test_manual_refresh_fetches_current_source_inside_cache_window(self):
+        with patch.object(live.time,'monotonic',return_value=0):first=live.live_panel('sz300949','day')
+        self.gateway.fetch_symbol_klines.return_value['klines'][-1]['close']=20.5
+        with patch.object(live.time,'monotonic',return_value=1):
+            response=self.client.get('/api/research/live-panel/sz300949/day?refresh=true')
+        self.assertEqual(response.status_code,200,response.text)
+        self.assertEqual(first['bars'][-1]['close'],21)
+        self.assertEqual(response.json()['bars'][-1]['close'],20.5)
+        self.assertEqual(self.gateway.fetch_symbol_klines.call_count,2)
+        self.assertEqual(response.json()['source_kind'],'live_market_panel')
+
     def test_unfinished_daily_high_does_not_enter_structural_signal_calculation(self):
         now=datetime(2026,11,9,10,0,tzinfo=live.CN)
         rows=self.rows+[{'time':'2026-11-09','open':21,'high':999,'low':20,'close':22,'volume':20}]
