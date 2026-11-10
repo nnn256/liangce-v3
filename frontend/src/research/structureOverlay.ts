@@ -6,7 +6,7 @@ export function allStructureLayers(primary:Panel,source:Panel,detail:Evidence|nu
  const original=context?{...primary,...context,signals:context.segment_signals||(sameInput?source.signals:[]),
   confirmations:[],signal_events:[],confirmation_records:[]}:source;
  const fine=context?.stroke_model||(sameInput?source.stroke_model:null);
- const small=primary.resolution==='stroke'?primary:fine?{...primary,...fine,all_centers:fine.centers,confirmations:[],signal_events:[],confirmation_records:[]}:null;
+ const small=primary.resolution==='stroke'?primary:fine?{...primary,...fine,all_centers:fine.centers,confirmations:fine.confirmations||[],signal_events:[],confirmation_records:fine.confirmation_records||[]}:null;
  const large=primary.resolution==='segment'?primary:original;
  const centers=[...(small?.all_centers||[]).map((item:Evidence)=>({...item,resolution:'stroke'})),
   ...(large.all_centers||[]).map((item:Evidence)=>({...item,resolution:'segment'}))];

@@ -5,9 +5,19 @@ self.addEventListener('activate',event=>{
   const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   await Promise.allSettled(clients.map(client=>{
    const url=new URL(client.url);
-   if(!url.href.startsWith(self.registration.scope)||url.searchParams.get('release')==='2026.11.10.4')return;
-   url.searchParams.set('release','2026.11.10.4');
+   if(!url.href.startsWith(self.registration.scope)||url.searchParams.get('release')==='2026.11.10.5')return;
+   url.searchParams.set('release','2026.11.10.5');
    return client.navigate(url.href);
   }));
+ })());
+});
+
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();
+ event.waitUntil((async()=>{
+  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  const client=windows.find(window=>window.url.startsWith(self.registration.scope));
+  if(client)return client.focus();
+  return self.clients.openWindow(self.registration.scope);
  })());
 });

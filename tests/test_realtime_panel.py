@@ -86,7 +86,8 @@ class RealtimePanelTests(unittest.TestCase):
         archive=ROOT/'data/research/sz300949__day.json.gz';before=archive.read_bytes()
         self.gateway.fetch_symbol_klines.return_value={'klines':[]}
         self.assertEqual(self.client.get('/api/research/live-panel/sz300949/day').status_code,503)
-        self.assertEqual(self.client.get('/api/research/live-panel/sz300949/auction').status_code,422)
+        self.gateway.fetch_level1_quotes.return_value={}
+        self.assertEqual(self.client.get('/api/research/live-panel/sz300949/auction?refresh=true').status_code,503)
         self.assertEqual(before,archive.read_bytes())
         self.assertEqual(json.loads(gzip.decompress(before))['data_as_of'][:10],'2026-11-06')
 

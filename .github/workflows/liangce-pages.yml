@@ -30,6 +30,8 @@ jobs:
         working-directory: frontend
       - run: npx tsx src/research/backendConnection.test.ts
         working-directory: frontend
+      - run: npx tsx src/research/alertEngine.test.ts
+        working-directory: frontend
       - run: npm run build
         working-directory: frontend
         env:

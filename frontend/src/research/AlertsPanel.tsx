@@ -1,0 +1,33 @@
+import {useState} from 'react';
+import {Bell,BellRing,Plus,Trash2,Volume2} from 'lucide-react';
+import type {AlertsController} from './useAlerts';
+import {CLASSES,PERIODS,type Stock} from './types';
+import type {AlertRule} from './alertEngine';
+
+export function AlertsPanel({alerts,symbol,name,stocks}:{alerts:AlertsController;symbol:string;name:string;stocks:Stock[]}){
+ const [chosen,setChosen]=useState(symbol),[kind,setKind]=useState<'price'|'signal'>('price'),[measure,setMeasure]=useState<'price'|'change_percent'>('price');
+ const [comparison,setComparison]=useState<'gte'|'lte'>('gte'),[threshold,setThreshold]=useState(''),[period,setPeriod]=useState('5m'),[resolution,setResolution]=useState<'stroke'|'segment'>('stroke');
+ const [classes,setClasses]=useState(()=>new Set(Object.keys(CLASSES))),[confirmedOnly,setConfirmedOnly]=useState(true),[error,setError]=useState('');
+ const choices=[...new Map([{symbol,name,code:symbol.slice(2),market:symbol.slice(0,2).toUpperCase()},...stocks].map(stock=>[stock.symbol,stock])).values()];
+ const create=()=>{setError('');try{
+  const selected=choices.find(item=>item.symbol===chosen)||choices[0];const rule:Omit<AlertRule,'id'|'enabled'|'created_at'>={symbol:selected.symbol,name:selected.name,kind};
+  if(kind==='price'){const value=Number(threshold);if(!threshold.trim()||!Number.isFinite(value)||(measure==='price'&&value<=0))throw Error('请输入有效的目标价格或涨跌幅');Object.assign(rule,{threshold:value,measure,comparison})}
+  else{if(!classes.size)throw Error('至少选择一种买卖点');Object.assign(rule,{period,resolution,classes:[...classes],confirmedOnly})}
+  alerts.add(rule);setThreshold('');
+ }catch(e:any){setError(e.message)}};
+ return <section className="lc-alerts-panel lc-panel" aria-label="监控提醒中心">
+  <div className="lc-alert-heading"><div><h3><BellRing size={19}/>监控与提醒</h3><p>价格到达、涨跌幅及缠论买卖信号</p></div><button className="lc-button" onClick={alerts.refresh}>立即检查</button></div>
+  <div className="lc-alert-runtime" role="status"><b>{alerts.status}</b><span>{alerts.checkedAt?'最近检查 '+new Date(alerts.checkedAt).toLocaleTimeString('zh-CN',{hour12:false}):'添加规则后自动检查'}</span><span>已启用 {alerts.rules.filter(rule=>rule.enabled).length} / {alerts.rules.length}</span></div>
+  <p className="lc-alert-scope">页面打开且浏览器允许运行时监控；后台、锁屏可能被暂停，关闭网页后不保证提醒。规则与记录保存在当前浏览器，手机和电脑分别配置。信号首次监控只建立基线，不补发历史提醒。</p>
+  <div className="lc-alert-channels"><button className="lc-button" onClick={()=>void alerts.enableNotifications()} disabled={alerts.permission==='unsupported'}><Bell size={14}/>{alerts.desktop?'浏览器通知已开启':alerts.permission==='denied'?'通知被浏览器禁止':'开启浏览器通知'}</button><button className="lc-button" aria-pressed={alerts.sound} onClick={()=>void alerts.enableSound().catch(e=>setError(e.message))}><Volume2 size={14}/>{alerts.sound?'声音已开启':'开启提示音'}</button><button className="lc-button" onClick={alerts.test}>测试提醒</button><small>通知授权失败时，页面内仍保留提醒记录。</small></div>
+  <div className="lc-alert-form"><label>监控股票<select aria-label="监控股票" value={chosen} onChange={e=>setChosen(e.target.value)}>{choices.map(stock=><option key={stock.symbol} value={stock.symbol}>{stock.name} · {stock.symbol.slice(2)}</option>)}</select></label><label>提醒类型<select aria-label="提醒类型" value={kind} onChange={e=>setKind(e.target.value as any)}><option value="price">价格 / 涨跌幅</option><option value="signal">买卖信号</option></select></label>
+   {kind==='price'?<><label>监控数值<select aria-label="监控数值" value={measure} onChange={e=>setMeasure(e.target.value as any)}><option value="price">价格（元）</option><option value="change_percent">涨跌幅（%）</option></select></label><label>触发条件<select aria-label="触发条件" value={comparison} onChange={e=>setComparison(e.target.value as any)}><option value="gte">高于或等于</option><option value="lte">低于或等于</option></select></label><label>目标值<input aria-label="目标值" type="number" step="any" value={threshold} placeholder={measure==='price'?'例如 60':'例如 -3'} onChange={e=>setThreshold(e.target.value)}/></label></>:<><label>K线周期<select aria-label="信号监控周期" value={period} onChange={e=>setPeriod(e.target.value)}>{PERIODS.filter(([key])=>!['auction','timeshare','five_days'].includes(key)).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><label>信号口径<select aria-label="信号监控口径" value={resolution} onChange={e=>setResolution(e.target.value as any)}><option value="stroke">笔级代理规则</option><option value="segment">线段 / 递归规则</option></select></label><label className="lc-alert-check"><input type="checkbox" checked={confirmedOnly} onChange={e=>setConfirmedOnly(e.target.checked)}/>只提醒规则确认</label></>}
+   <button className="lc-button primary" onClick={create}><Plus size={14}/>添加提醒</button>
+  </div>
+  {kind==='signal'&&<div className="lc-alert-classes">{Object.entries(CLASSES).map(([key,label])=><label key={key}><input type="checkbox" checked={classes.has(key)} onChange={()=>setClasses(previous=>{const next=new Set(previous);next.has(key)?next.delete(key):next.add(key);return next})}/>{label}</label>)}<small>最多同时运行4条信号规则；信号检查约30秒，休市约5分钟。规则确认仍可能后续失效。</small></div>}
+  {(error||alerts.error)&&<p className="lc-live-error">{error||alerts.error}</p>}
+  <div className="lc-alert-rules">{alerts.rules.map(rule=><article key={rule.id}><div><b>{rule.name} <small>{rule.symbol.slice(2)}</small></b><p>{rule.kind==='price'?(rule.measure==='change_percent'?'涨跌幅':'价格')+' '+(rule.comparison==='gte'?'≥':'≤')+' '+rule.threshold+(rule.measure==='change_percent'?'%':'元'):(rule.resolution==='stroke'?'笔级代理':'线段规则')+' · '+rule.period+' · '+rule.classes?.map(key=>CLASSES[key]).join(' / ')+' · '+(rule.confirmedOnly?'规则确认':'候选及确认')}</p><small>{rule.enabled?'监控已启用':'已暂停'}</small></div><button className="lc-button" onClick={()=>{try{alerts.toggle(rule.id);setError('')}catch(e:any){setError(e.message)}}}>{rule.enabled?'暂停':'启用'}</button><button className="lc-icon-button" aria-label={'删除'+rule.name+'提醒'} onClick={()=>alerts.remove(rule.id)}><Trash2 size={15}/></button></article>)}{!alerts.rules.length&&<p className="lc-alert-empty">还没有监控规则。选择目标价或信号后点击“添加提醒”。</p>}</div>
+  <div className="lc-alert-heading"><h4>提醒记录 · {alerts.events.length}</h4><button className="lc-button" onClick={alerts.clear}>清空记录</button></div>
+  <div className="lc-alert-events" aria-live="polite">{alerts.events.map(event=><article key={event.id}><Bell size={14}/><div><b>{event.test?'[测试] ':''}{event.title}</b><p>{event.body}</p><small>{new Date(event.time).toLocaleString('zh-CN',{hour12:false})}{!event.test?' · 行情/证据 '+new Date(event.market_time).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):''}</small></div></article>)}{!alerts.events.length&&<p className="lc-alert-empty">触发后显示在这里。旧报价、首次基线与已失效信号不会冒充新增提醒。</p>}</div>
+ </section>;
+}

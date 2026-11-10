@@ -155,3 +155,14 @@
 - 新backendConnection.test.ts通过，TS与构建通过。模拟服务8841脚本.runtime/test_mobile_wake.py health前7次503+panel首请求503，browser sessionliangce-phone-wake-retry手机390px等恢复。实际hosted服务未人为休眠，未更改免费套餐或保活。
 - 基线备份D:/stock-dashboard-backups/mobile-wake-20261110/BASELINE.zip。当前Git基线b039de309e2147177cf8c58d6b523ff90007efae，线上真实仓库nnn256/LiangCe分支codex/hosted-chan-167，备份/Pages nnn256/liangce-v3 main，两边同步。
 - 下一动作：查看模拟浏览器恢复证据→最后lint/build/test→提交双仓并等CI/Railway自动部署→手机公网核验→备份可逆验证→交付原因和新版链接。别提交无关data日志。
+
+
+## 正在做：竞价实时快照 + 产品内监控提醒（2026-11-10 .5）
+- 用户截图指竞价标签报422，要求实时获取，并加入价格/买卖信号监控。已新增web/auction_panel.py，由gateway真实L1报价/五档盘口，源时间只在实际竞价窗口且120秒内的当日采集才追加曲线，不补造历史或缠论信号；realtime_panel auction转该接口。Docker要带auction_panel已修改。
+- 新GET /api/research/monitor-signals/{code}/{period}?resolution=stroke|segment，返回最小信号与当前规则确认。make_panel为fine附当前观察confirmations/records，保留stroke_rule_current_observation语义，非历史最早确认，仍只用闭合K线。ResearchApp/structureOverlay使用fine确认数据。
+- 前端新增alertEngine.ts/useAlerts.ts/AlertsPanel.tsx/AuctionSnapshot.tsx/alerts.css。价格>=<=和涨跌幅，六买卖类可选择笔/段与确认Only；首次信号基线不补历史，价格新鲜度和跨越去重；20规则/4启用信号，localStorage规则/状态/200事件。页面toast、显式浏览器通知授权、用户启用音效，测试/暂停/删除/检查/记录。页面打开才运行，后台锁屏可暂停/关闭不保证，不伪称云推送。技能stock-monitor已读/宣布；无Codexautomation工具可用也无需，因为这是产品功能。
+- 56 Python tests通过，alertEngine与TS检查及构建通过；版本constants/cache升级为2026.11.10.5。源码还未commit。CI加入auction tests和alertEngine test。
+- 本地服务8843 exec64123，LIANGCE_TDX_BINARY=.runtime/tdx-api-build/liangce-tdx-shanghai.exe port18085可自动启动。真实竞价56.30 source_time11-09 16:14:42/五档；非竞价0快照；5分signal334/confirmed11，日line1/0。
+- 浏览器agent-browser新Edge启动失败/Chromeqa renderer旧target卡住，用CDP关闭own page并新建成功。当前独立Chrome DevTools63094 sessionliangce-alerts-cdp --cdp63094，page127.0.0.1:8843；可继续用该CLI。QA旧sessionliangce-auction-alerts-qa有卡住daemon，别误动用户正常Edge。
+- 页面新增价格rule60、signal5m已成功，模拟fresh59→61 priceevent1，重复不增；模拟新增三买confirm事件成功。全部在本地QA fetch override，不是市场事实；snapshot D:/stock-dashboard-backups/auction-alerts-20261110/monitor-mobile-test.png；390/390无溢出。接下来清理本地模拟state，build最后修改→重载浏览器查看真实竞价/规则持久化/通知及手机→提交双仓main与LiangCe codex/hosted-chan-167→CI+Railway→公网实际竞价和signal/提醒入口验收→备份回滚→最终准确说明关闭页无保证。
+- 基线备份D:/stock-dashboard-backups/auction-alerts-20261110/BASELINE.zip。当前HEAD8f63810d0c5e0dd7c00138cff03fdd49e599e8f6。不要提交无关data日志。

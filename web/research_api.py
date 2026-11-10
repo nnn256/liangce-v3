@@ -80,7 +80,8 @@ def health():
             'hosting':os.environ.get('LIANGCE_HOSTING','local'),
             'compute_limits':{'workers':WORKERS,'queue':QUEUE_LIMIT,'max_input_bars':MAX_COMPUTE_BARS},
             'runtime_storage':'ephemeral' if os.environ.get('LIANGCE_EPHEMERAL')=='1' else 'local',
-            'live_chart_enabled':True,'live_chart_periods':['timeshare','five_days','1m','5m','15m','30m','60m','day','5d','week','month','quarter','year'],
+            'live_chart_enabled':True,'live_chart_periods':['auction','timeshare','five_days','1m','5m','15m','30m','60m','day','5d','week','month','quarter','year'],
+            'auction_quote_enabled':True,'monitor_signal_enabled':True,'monitor_delivery_scope':'open browser page; browser notification permission required; no guaranteed delivery after close',
             'unsupported_signal_views':{'auction':'竞价价格快照缺少连续OHLC与次级走势证据，不生成六类确认点'},
             'live_chart_source':('oficcejo/tdx-api@ea07dccb67aeb92ebde851ac31503b4bf457a318'
                                  if os.environ.get('LIANGCE_TDX_API') or os.environ.get('LIANGCE_TDX_BINARY') else
@@ -156,6 +157,31 @@ def signal_periods(code:str):
     except ValueError as error:raise HTTPException(422,str(error))
     from web.realtime_panel import period_overview
     return JSONResponse(period_overview(code),headers={'Cache-Control':'no-store'})
+
+
+@router.get('/monitor-signals/{code}/{period}')
+def monitor_signals(code:str,period:str,resolution:str='stroke'):
+    try:code=symbol(code)
+    except ValueError as error:raise HTTPException(422,str(error))
+    if resolution not in {'stroke','segment'} or period not in {'1m','5m','15m','30m','60m','day','5d','week','month','quarter','year'}:
+        raise HTTPException(422,'信号监控请选择笔级/线段及K线周期')
+    from web.realtime_panel import live_panel
+    panel=live_panel(code,period);model=panel['stroke_model'] if resolution=='stroke' else panel
+    confirmed={item['signal_id']:item for item in model.get('confirmations',[])}
+    records={item['id']:item for item in model.get('confirmation_records',[])}
+    points=[]
+    for point in model.get('signals',[]):
+        record=records.get(point['id'],{})
+        points.append({'id':point['id'],'class':point['class'],'side':point['side'],'rank':point.get('rank',0),
+            'price':point['price'],'anchor_time':point['event_time'],'available_time':point.get('available_time'),
+            'state':record.get('state',point['state']),'confirmed':point['id'] in confirmed,
+            'confirmed_at':confirmed.get(point['id'],{}).get('confirmed_at'),'definition_mode':point.get('definition_mode'),
+            'confirmation_semantics':confirmed.get(point['id'],{}).get('confirmation_semantics')})
+    return JSONResponse({'symbol':code,'period':period,'resolution':resolution,'signals':points,'fetched_at':panel['fetched_at'],
+        'structure_as_of':panel['structure_as_of'],'source':panel['provenance']['source'],'market_session':panel['market_session'],
+        'definition_mode':'stroke_proxy' if resolution=='stroke' else panel['definition_mode'],
+        'observation_scope':'current_live_evidence; first subscription establishes baseline without historical notifications',
+        'refresh_after_seconds':30 if panel['market_session']=='trading_hours' else 300,'execution_allowed':False},headers={'Cache-Control':'no-store'})
 
 
 @router.post('/precision-backtests')

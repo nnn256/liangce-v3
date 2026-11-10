@@ -6,6 +6,7 @@ module never replaces an archive or certifies provider adjustment as verified.
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timedelta,timezone
+import bisect
 import calendar
 import hashlib
 import json
@@ -75,6 +76,22 @@ def make_panel(code,period,candles,now,metadata=None):
     report=analyze_complete(code,period,closed,now.isoformat(),digest)
     from chanmodel.stroke_signals import snapshot as fine_snapshot
     fine=fine_snapshot(closed)
+    fine['confirmations']=[];fine['confirmation_records']=[]
+    closed_times=[bar.closed_at for bar in closed]
+    for point in fine['signals']:
+        passed=point['rule_audit']['passed'] and point['state']!='invalidated'
+        record={'id':point['id'],'state':'confirmed' if passed else point['state'],'first_seen_at':now.isoformat()}
+        if passed:
+            key=('stroke',code,period,point['class'],point['event_time'],point['price'])
+            witness=observations.setdefault(key,{'time':now.isoformat(),'index':len(closed)-1})
+            record.update(first_seen_at=witness['time'],confirmed_at=witness['time'])
+            fine['confirmations'].append({'signal_id':point['id'],'class':point['class'],'side':point['side'],'rank':0,
+                'resolution':'stroke','anchor':point['anchor'],'anchor_time':point['event_time'],'price':point['price'],
+                'observed_index':max(0,bisect.bisect_right(closed_times,witness['time'])-1),'observed_at':witness['time'],'confirmed_at':witness['time'],
+                'event':'confirmed','point':point,'execution_allowed':False,
+                'confirmation_semantics':'stroke_rule_current_observation; earliest_historical_confirmation_not_claimed'})
+        fine['confirmation_records'].append(record)
+    while len(observations)>2000:observations.popitem(last=False)
     confirmations=[];records=[];report['as_of_index']=len(closed)-1
     eligible=metadata.get('split_adjustment_verified') is True
     for point in report['signals']:
@@ -137,6 +154,9 @@ def make_panel(code,period,candles,now,metadata=None):
 
 
 def live_panel(code,period,*,refresh=False):
+    if period=='auction':
+        from web.auction_panel import auction_panel
+        return auction_panel(code,refresh)
     if period not in NATIVE:raise HTTPException(422,'分时/集合竞价价格快照不具备连续OHLC证据；可查看对应数据，买卖点需选择K线周期')
     now=datetime.now(CN);ttl=10 if trading_hours(now) else 60
     key=(code,period)
