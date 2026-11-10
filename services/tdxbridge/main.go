@@ -18,6 +18,7 @@ import (
 var mutex sync.Mutex
 var connection *tdx.Client
 var idleTimer *time.Timer
+var hostOffset int
 var validCode = regexp.MustCompile(`^(sh6[0-9]{5}|sz(0[0-9]{5}|30[0-9]{4})|bj[0-9]{6})$`)
 var kinds = map[string]uint8{"minute1": 7, "minute5": 0, "minute15": 1, "minute30": 2, "hour": 3, "day": 9, "week": 5, "month": 6, "quarter": 10, "year": 11}
 
@@ -36,7 +37,10 @@ func client() (*tdx.Client, error) {
 		return connection, nil
 	}
 	// Hosts are the same public protocol endpoints used by the supplied service.
-	c, err := tdx.DialHostsRange(tdx.Hosts, tdx.WithDebug(false), tdx.WithLevel(tdx.LevelError), tdx.WithRedial(false))
+	start := hostOffset % len(tdx.Hosts)
+	hostOffset++
+	hosts := append(append([]string{}, tdx.Hosts[start:]...), tdx.Hosts[:start]...)
+	c, err := tdx.DialHostsRange(hosts, tdx.WithDebug(false), tdx.WithLevel(tdx.LevelError), tdx.WithRedial(false))
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +80,25 @@ func history(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := c.GetKlineAll(category, code)
-	if err != nil {
+	// Some reachable TDX hosts return an empty minute dataset while daily
+	// history remains available. Retry the same exact period on another host;
+	// never substitute a different period or a stored historical response.
+	for attempt := 1; err == nil && result != nil && len(result.List) == 0 && attempt < 3; attempt++ {
 		c.Close()
+		connection = nil
+		c, err = client()
+		if err != nil {
+			break
+		}
+		result, err = c.GetKlineAll(category, code)
+	}
+	if err == nil && (result == nil || len(result.List) == 0) {
+		err = fmt.Errorf("TDX hosts returned no native %s bars for %s", kind, code)
+	}
+	if err != nil {
+		if c != nil {
+			c.Close()
+		}
 		connection = nil
 		response(w, nil, err)
 		return
