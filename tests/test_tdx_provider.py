@@ -40,6 +40,16 @@ class TdxProviderTests(unittest.TestCase):
         self.assertEqual(len(bars),1);self.assertEqual(meta['quarantined_zero_activity_rows'],1)
         with self.assertRaises(ValueError):tdx.normalize_rest({'list':[row('2026-11-09T13:01:00+08:00')]},'5m',self.now)
 
+    def test_preopen_scheduled_flat_zero_activity_bucket_is_not_a_future_trade(self):
+        now=datetime(2026,11,10,9,12,tzinfo=tdx.CN)
+        previous=row('2026-11-09T15:00:00+08:00',56300)
+        placeholder={'Time':'2026-11-10T09:35:00+08:00','Open':56300,'High':56300,'Low':56300,'Close':56300,'Volume':0,'Amount':0}
+        bars,meta=tdx.normalize_rest({'list':[previous,placeholder]},'5m',now)
+        self.assertEqual(len(bars),1);self.assertEqual(meta['quarantined_preopen_placeholders'],1)
+        self.assertEqual(bars[0].closed_at,previous['Time'])
+        with self.assertRaises(ValueError):tdx.normalize_rest({'list':[{**placeholder,'Volume':10}]},'5m',now)
+        with self.assertRaises(ValueError):tdx.normalize_rest({'list':[{**placeholder,'Time':'2026-11-10T10:00:00+08:00'}]},'5m',now)
+
     def test_cross_split_calendar_aggregation_uses_adjusted_daily_ohlc(self):
         bars=[Candle(0,100,110,90,100,'2026-05-28T15:00:00+08:00',100),
               Candle(1,70,72,68,70,'2026-05-29T15:00:00+08:00',145)]

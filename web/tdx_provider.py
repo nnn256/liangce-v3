@@ -69,12 +69,19 @@ def normalize_rest(data,period,now):
     if not isinstance(rows,list) or declared is not None and declared!=len(rows):raise ValueError('TDX行数声明与实际不符')
     meta=data.get('meta') or {}
     if meta.get('source') not in {None,'tdx'} or meta.get('type') not in {None,PERIODS[period]}:raise ValueError('TDX返回源/周期不匹配')
-    unique={};quarantined=0
+    unique={};quarantined=0;preopen_placeholders=0
     for row in rows:
         label=str(row.get('Time',''));point=period_end(label,period)
         values=[yuan(row.get(key),key) for key in ['Open','High','Low','Close']]
         volume=float(row['Volume'])*100
         if any(value<=0 for value in values):raise ValueError('TDX返回非正价格')
+        # Before the continuous session TDX publishes today's first minute
+        # bucket in advance, flat at the prior price and with zero activity.
+        # It is a scheduled placeholder, not a forming or historical candle.
+        if period.endswith('m') and point.date()==now.date() and now.hour*60+now.minute<570:
+            first_close=570+int(period[:-1])
+            if point.hour*60+point.minute==first_close and len(set(values))==1 and volume==0 and float(row.get('Amount',0))==0:
+                preopen_placeholders+=1;continue
         # Known source anomaly: a zero-activity flat13:00 marker, not a bar.
         if period.endswith('m') and point.hour==13 and point.minute==0 and len(set(values))==1 and volume==0 and float(row.get('Amount',0))==0:
             quarantined+=1;continue
@@ -90,6 +97,7 @@ def normalize_rest(data,period,now):
     return candles,{'source':'oficcejo/tdx-api','adjustment':'unadjusted','price_unit':'CNY',
                      'volume_unit':'shares','source_price_unit':'milli_CNY','source_volume_unit':'lots',
                      'scope':'all_provider_native_pages','source_rows':len(rows),'quarantined_zero_activity_rows':quarantined,
+                     'quarantined_preopen_placeholders':preopen_placeholders,
                      'provider_meta':meta,'source_retention_unlimited':False}
 
 
