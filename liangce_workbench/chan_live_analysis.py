@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import gzip,pickle
 import threading
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
@@ -10,6 +11,7 @@ from .chan_service import PROFILE,bar_time,finish_result
 from .chanmodel.model import Candle
 from .chanmodel.causal_replay import StreamingStructure,SignalLedger,CONFIG
 from .chanmodel.structure import merge_bars,fractals_at,strokes_at
+from web.compute_budget import bounded
 
 
 def history_from_panel(panel):
@@ -59,7 +61,7 @@ class ReplaySession:
 
 
 class LiveAnalysisCache:
-    def __init__(self,max_sessions=2):
+    def __init__(self,max_sessions=1):
         self.lock=threading.RLock();self.entries=OrderedDict();self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='workbench-replay');self.max_sessions=max_sessions
     def get(self,panel):
         history=history_from_panel(panel);key=(history['code'],history['native_period']);digest=fingerprint(history)
@@ -71,7 +73,8 @@ class LiveAnalysisCache:
                 return dict(status='updating',profile=PROFILE,completed=entry['completed'],total=len(history['bars']),message='已有回放正在处理，完成后同步新增K线')
             if sum(e['status']=='running' for e in self.entries.values())>=self.max_sessions:
                 return dict(status='queued',profile=PROFILE,completed=0,total=len(history['bars']),message='回放队列正在处理其他周期')
-            session=entry['session'] if entry else ReplaySession(history)
+            session=pickle.loads(gzip.decompress(entry['session'])) if entry and isinstance(entry['session'],bytes) else entry['session'] if entry else ReplaySession(history)
+            for removable in [k for k,e in self.entries.items() if e['status']!='running']:del self.entries[removable]
             entry=dict(digest=digest,session=session,status='running',completed=0,total=len(history['bars']),preview=geometry(history),result=None,error=None)
             self.entries[key]=entry;self.entries.move_to_end(key)
             self.pool.submit(self.run,key,entry,history)
@@ -80,13 +83,16 @@ class LiveAnalysisCache:
                 if removable is None:break
                 del self.entries[removable]
             return self.view(entry)
+    @bounded('workbench_replay_worker',wait=True)
     def run(self,key,entry,history):
         try:
             result=entry['session'].extend(history,lambda count:entry.update(completed=count))
-            with self.lock:entry.update(result=result,status='ready',preview=None)
+            frozen=gzip.compress(pickle.dumps(entry['session'],protocol=5),compresslevel=1)
+            payload=gzip.compress(json.dumps(result,ensure_ascii=False,separators=(',',':')).encode(),compresslevel=1)
+            with self.lock:entry.update(session=frozen,result=payload,status='ready',preview=None)
         except Exception as error:
             with self.lock:entry.update(status='failed',error=str(error))
     def view(self,entry):
         return dict(status=entry['status'],profile=PROFILE,input_sha256=entry['digest'],completed=entry['completed'],total=entry['total'],
-                    result=entry['result'] if entry['status']=='ready' else entry['preview'],message=entry['error'])
+                    result=json.loads(gzip.decompress(entry['result'])) if entry['status']=='ready' else entry['preview'],message=entry['error'])
     def close(self):self.pool.shutdown(wait=False,cancel_futures=True)

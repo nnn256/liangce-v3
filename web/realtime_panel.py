@@ -8,12 +8,14 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timedelta,timezone
 import calendar
 import copy
+import gzip,pickle
 import hashlib
 import json
 import threading
 import time
 
 from fastapi import HTTPException
+from web.compute_budget import ByteCache,bounded
 
 CN=timezone(timedelta(hours=8))
 NATIVE={'1m':'1m','5m':'5m','15m':'15m','30m':'30m','60m':'60m','day':'1D','week':'1W','month':'1M','quarter':'quarter','year':'year','5d':'5d',
@@ -23,7 +25,7 @@ cache_lock=threading.Lock()
 scan_pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='period-scan')
 scan_lock=threading.Lock()
 scans={}
-structure_cache=OrderedDict()
+structure_cache=ByteCache(max_bytes=8*1024*1024,max_entries=2)
 structure_lock=threading.RLock()
 from web.signal_observation import sessions as observations,observe as observe_signals
 
@@ -34,11 +36,13 @@ def structure_models(code,period,bars,cutoff,digest,*,cached=False):
     if not cached:return analyze_complete(code,period,bars,cutoff,digest),snapshot(bars)
     key=(code,period,digest)
     with structure_lock:
-        if key not in structure_cache:
-            structure_cache[key]=(analyze_complete(code,period,bars,cutoff,digest),snapshot(bars))
-            while len(structure_cache)>2:structure_cache.popitem(last=False)
-        structure_cache.move_to_end(key)
-        return copy.deepcopy(structure_cache[key])
+        saved=structure_cache.get(key)
+        if saved is not None:return pickle.loads(gzip.decompress(saved))
+        # Discard old model bytes before constructing another full history.
+        structure_cache.clear()
+        result=(analyze_complete(code,period,bars,cutoff,digest),snapshot(bars))
+        structure_cache.put(key,gzip.compress(pickle.dumps(result,protocol=5),compresslevel=1))
+        return result
 
 
 def trading_hours(now):
@@ -144,6 +148,7 @@ def make_panel(code,period,candles,now,metadata=None,*,reuse_structure=False):
             'backtest_scope_note':'首次加载只核对历史结构，不把旧结构画成当前确认；在线新增闭合K线触发和历史逐根回放分别记录'}
 
 
+@bounded('live_structure')
 def live_panel(code,period,*,refresh=False):
     if period=='auction':
         from web.auction_panel import auction_panel
@@ -154,7 +159,7 @@ def live_panel(code,period,*,refresh=False):
     with cache_lock:
         entry=cache.get(key)
         if entry and not refresh and time.monotonic()-entry[0]<ttl:
-            cache.move_to_end(key);return entry[1]
+            cache.move_to_end(key);return json.loads(gzip.decompress(entry[1]))
         import market_gateway as mg
         try:
             from web import tdx_provider
@@ -172,7 +177,11 @@ def live_panel(code,period,*,refresh=False):
                 panel['provenance']['display_semantics']='line uses native minute close; signals use underlying complete OHLC history, never sampled prices'
         except HTTPException:raise
         except Exception as error:raise HTTPException(503,'实时K线暂不可用：'+str(error)[:160]) from error
-        cache[key]=(time.monotonic(),panel);cache.move_to_end(key)
+        # Never retain another expanded historical graph between requests.
+        packed=gzip.compress(json.dumps(panel,ensure_ascii=False,separators=(',',':')).encode(),compresslevel=1)
+        cache.clear()
+        if len(packed)<=8*1024*1024:cache[key]=(time.monotonic(),packed)
+        if key in cache:cache.move_to_end(key)
         while len(cache)>1:cache.popitem(last=False)
         return panel
 

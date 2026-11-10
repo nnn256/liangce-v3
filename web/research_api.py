@@ -10,6 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel, Field, field_validator
+from web.compute_budget import bounded,status as compute_status
 
 ROOT=Path(__file__).resolve().parents[1]
 ARCHIVE=ROOT/'data/research'
@@ -74,7 +75,7 @@ def check_write(request):
 
 @router.get('/health')
 def health():
-    return {'status':'ok','product':'量测 v3','version':'3.0.0','snapshot_date':manifest()['as_of'],
+    return {'status':'ok','product':'量测 v3','version':'3.0.0','snapshot_date':manifest()['as_of'],'compute_budget':compute_status(),
             'source':'verified_historical_snapshot','compute_enabled':os.environ.get('LIANGCE_READONLY')!='1',
             'authentication_required':bool(os.environ.get('LIANGCE_API_TOKEN')),'running_jobs':sum(j['state']=='running' for j in jobs.values()),
             'hosting':os.environ.get('LIANGCE_HOSTING','local'),
@@ -120,6 +121,7 @@ def search(q:str='',limit:int=20):
 
 
 @router.get('/panel/{code}/{period}')
+@bounded('historical_panel')
 def panel(code:str,period:str,request:Request):
     try:code=symbol(code);validate_period(period)
     except ValueError as e:raise HTTPException(422,str(e))
@@ -144,6 +146,7 @@ def quote(code:str):
 
 
 @router.get('/live-panel/{code}/{period}')
+@bounded('live_panel_response')
 def realtime_panel(code:str,period:str,refresh:bool=False):
     try:code=symbol(code);validate_period(period)
     except ValueError as error:raise HTTPException(422,str(error))
@@ -160,6 +163,7 @@ def signal_periods(code:str):
 
 
 @router.get('/monitor-signals/{code}/{period}')
+@bounded('signal_monitor')
 def monitor_signals(code:str,period:str,resolution:str='stroke'):
     try:code=symbol(code)
     except ValueError as error:raise HTTPException(422,str(error))
@@ -209,6 +213,7 @@ def saved_replay(code:str,resolution:str):
 
 
 @router.get('/precision-backtests/{ident}/{period}')
+@bounded('backtest_detail_response')
 def precision_detail(ident:str,period:str):
     from web.precision_backtest import detail
     return JSONResponse(detail(ident,period),headers={'Cache-Control':'no-store'})
@@ -316,6 +321,7 @@ def live_bars(code,period):
                 'confirmation_eligible':False,'quality_note':'上游复权/原生完整性未认证，本次只生成结构候选'}
 
 
+@bounded('historical_replay_job',wait=True)
 def build_dynamic(req,ident):
     from chanmodel.model import Candle,time_value
     from chanmodel.complete_study import analyze_complete

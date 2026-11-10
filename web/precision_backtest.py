@@ -14,6 +14,7 @@ from chanmodel.stroke_signals import replay as stroke_replay,CLASSES
 from chanmodel.causal_replay import StreamingStructure,SignalLedger
 from chanmodel.causal_portfolio import simulate,CostModel
 from web import tdx_provider as tdx
+from web.compute_budget import bounded,budget
 
 ROOT=Path(__file__).resolve().parents[1]
 PERIODS=['1m','5m','15m','30m','60m','day','5d','week','month','quarter','year']
@@ -104,6 +105,7 @@ def portfolio(code,period,bars,events,metadata,daily_bars,daily_meta):
     return result
 
 
+@bounded('precision_backtest',wait=True)
 def execute_period(code,period,resolution,bars,metadata,daily_bars,daily_meta,progress=None):
     closed=[bar for bar in bars if bar.closed]
     if not closed:raise ValueError('没有闭合K线')
@@ -170,10 +172,12 @@ def start(code,resolution,periods=None):
                     bars,meta=(daily,dm) if period=='day' else tdx.fetch(code,period,now)
                     def report(done,total):
                         with lock:run.update(current_bar=done,current_bars=total,progress=int(100*(index+done/max(total,1))/len(periods)))
-                    detail=execute_period(code,period,resolution,bars,meta,daily,dm,report)
-                    path=runtime()/ident/(period+'.json.gz');pack(path,detail)
-                    row={k:v for k,v in detail.items() if k not in {'replay','portfolio_orders','portfolio_trades','portfolio_equity','chart_bars','chart_context'}}
-                    row.update(state='completed',detail_url=f'/api/research/precision-backtests/{ident}/{period}')
+                    with budget('precision_result_write',wait=True):
+                        detail=execute_period(code,period,resolution,bars,meta,daily,dm,report)
+                        path=runtime()/ident/(period+'.json.gz');pack(path,detail)
+                        row={k:v for k,v in detail.items() if k not in {'replay','portfolio_orders','portfolio_trades','portfolio_equity','chart_bars','chart_context'}}
+                        row.update(state='completed',detail_url=f'/api/research/precision-backtests/{ident}/{period}')
+                        del detail
                 except Exception as error:row={'period':period,'state':'failed','error':str(error)[:500]}
                 with lock:run['rows']=run['rows']+[row];run['completed']+=1
                 pack(runtime()/ident/'summary.json.gz',dict(run))

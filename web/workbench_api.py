@@ -7,12 +7,14 @@ from fastapi.responses import JSONResponse
 from web.research_api import symbol
 from web.tdx_provider import fetch
 from liangce_workbench.chan_live_analysis import LiveAnalysisCache
+from web.compute_budget import bounded
 
 router=APIRouter(prefix='/api/workbench',tags=['LiangCe workbench'])
 CN=timezone(timedelta(hours=8));cache=OrderedDict();guard=threading.Lock();analysis=LiveAnalysisCache()
 PERIODS={'day','week','month','1m','5m','15m','30m','60m'}
 
 @router.get('/panel/{code}/{period}')
+@bounded('workbench_panel')
 def panel(code:str,period:str):
     try:code=symbol(code)
     except ValueError as error:raise HTTPException(422,str(error))

@@ -196,3 +196,12 @@
 - 69项Python通过、TS/新livePolling/liveView与旧signal/alert测试通过；最终ChartPane微调sourcekind依赖需最后lint/build。docs/all-live-updates-20261110.md已写。
 - 本地服务8852exec17087较早版本；8853exec64803最新mainmodel带tails；8854exec1642独立受控价格QA(不发布)source local_qa_controlled_update，用真实冻结日线每轮1秒控制末端价，不是市场数据。browser sessionliangce-all-live-final在8854；读数5.73→5.89，右侧tailprice同步，diamonds0。390/390无overflow；调整成现有series避免ready闪烁后需重载browser再验。
 - 下一步最后lint/build/browser fasttick canvas同一对象验证→提交双仓main和nnn256/LiangCe codex/hosted-chan-167→CI和Railway→公网日线preview/quote5chart10/69test/手机与无假当前确认→备份回滚→交付新链接与正式确认等闭合证据。
+
+
+## 当前故障修复：后端内存超限（2026-11-10 .8）
+- 用户问后端崩溃。线上.7部署33528e1f状态CRASHED/13:41:07北京时间，健康与根网页502，平台6h内存max630.94MB超过配置512MiB，CPUmax.66核，无Pythontraceback。已发起回退84c0493(.6含旧信号时间修复)→46c3b7dc部署SUCCESS/health200，用户已告知。
+- 当前本地HEAD42050e6、两个远程仍42050e6；hotfix未提交。不要让自动部署提前覆盖恢复版，先push main等CI512M压力成功再推LiangCe分支。
+- 新web/compute_budget.py共享重计算gate(重入threadlocal，竞争网页429 Retry-After10，workerwait)，ByteCache8MB压缩immutable+Linuxmalloc_trim。realtimepanel full object cache改gzip JSON，structurecache改8MBgzip pickle独立decode，无常驻双expanded models。research_api live/historical/detail/monitor序列化也gate，backtest execute/pack/del同门；workbenchpanel及worker同门，session/resultgzip冻结1session。Docker带新module。
+- 3个guard/cache tests通过；原69contract仍通过。memory对照script.runtime/measure_crash_memory.py原baseline420工作树D:/stock-dashboard-crash-baseline峰值304.55MiB/GC242.86，修复237.13/GC109MiB。真实HTTP压力脚本scripts/stress_hosted_memory.py本地第一轮207.92MiB/health16ms/并发3个429+后续多周期200通过；新增workbench回放检验正在session21636；72tests正在session89596。
+- CI_api新增--memory512m/no_swap容器压力从镜像实际app/importfixtures运行(会安装httpx testonly)，assertpeak450MiB/health3s/压缩session。目标版本.8 constants/PWA已改、TS/build已pass。
+- 基线D:/stock-dashboard-backups/backend-crash-20261110/BASELINE.zip；docs/backend-memory-fix-20261110.md已写。下一步等workbench压力结果/72tests→commit+只push origin main→实际CI容器检查→通过后push nnn256/LiangCe codex/hosted-chan-167→云端真实多设备请求压测+平台内存稳定→备份回滚收据→交付原因/恢复链接。别混运行时data日志。

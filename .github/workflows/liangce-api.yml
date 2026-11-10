@@ -13,7 +13,7 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements-hosted.txt httpx
-      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider tests.test_precision_backtest tests.test_stroke_signals tests.test_auction_panel tests.test_signal_observation tests.test_live_preview -v
+      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider tests.test_precision_backtest tests.test_stroke_signals tests.test_auction_panel tests.test_signal_observation tests.test_live_preview tests.test_compute_budget -v
         env:
           PYTHONUTF8: '1'
   hosted-container:
@@ -24,6 +24,9 @@ jobs:
         run: docker build -f Dockerfile.hosted -t liangce-hosted .
       - name: Check gateway dependencies in the actual image
         run: docker run --rm liangce-hosted python -c "from web.hosted_server import app; import market_gateway"
+      - name: Stress full history and concurrent requests within 512 MiB
+        run: |
+          docker run --rm --memory=512m --memory-swap=512m --entrypoint sh -v "$PWD/scripts:/checks:ro" liangce-hosted -c "pip install --no-cache-dir httpx >/dev/null && python /checks/stress_hosted_memory.py"
       - name: Check pinned TDX bridge starts without a provider connection
         run: |
           docker run -d --name liangce-tdx-bridge --entrypoint /usr/local/bin/liangce-tdx liangce-hosted

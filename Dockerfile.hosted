@@ -26,6 +26,7 @@ COPY web/hosted_server.py web/research_api.py web/market_gateway.py web/realtime
 COPY web/auction_panel.py ./web/
 COPY web/signal_observation.py ./web/
 COPY web/live_preview.py ./web/
+COPY web/compute_budget.py ./web/
 COPY web/dist ./web/dist
 COPY data/research ./data/research
 COPY data/precision-replays ./data/precision-replays
