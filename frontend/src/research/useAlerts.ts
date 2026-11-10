@@ -17,8 +17,8 @@ export function useAlerts(enabled:boolean){
   setEvents(previous=>{const next=[...items,...previous].slice(0,200);localStorage.setItem(EVENTS,JSON.stringify(next));return next});
   if(delivery.current.sound&&audio.current){try{const oscillator=audio.current.createOscillator(),gain=audio.current.createGain();gain.gain.value=.08;oscillator.frequency.value=880;oscillator.connect(gain);gain.connect(audio.current.destination);oscillator.start();oscillator.stop(audio.current.currentTime+.25)}catch{}}
   if(delivery.current.desktop&&typeof Notification!=='undefined'&&Notification.permission==='granted')for(const item of items.slice(0,3)){
-   if('serviceWorker' in navigator)void navigator.serviceWorker.ready.then(reg=>reg.showNotification(item.title,{body:item.body,tag:item.id,icon:new URL('icon.svg',location.href).href})).catch(()=>{});
-   else try{new Notification(item.title,{body:item.body,tag:item.id})}catch{}
+   if('serviceWorker' in navigator)void navigator.serviceWorker.ready.then(reg=>reg.showNotification(item.title,{body:item.body,tag:item.id,icon:new URL('icon.svg',location.href).href})).catch(()=>setError('系统通知未能显示，提醒已保留在页面记录。'));
+   else try{new Notification(item.title,{body:item.body,tag:item.id})}catch{setError('系统通知未能显示，提醒已保留在页面记录。')}
   }
  };
  const emitRef=useRef(emit);emitRef.current=emit;
@@ -68,7 +68,7 @@ export function useAlerts(enabled:boolean){
  const remove=(id:string)=>{delete states.current[id];localStorage.setItem(STATES,JSON.stringify(states.current));setRules(previous=>previous.filter(rule=>rule.id!==id))};
  const enableNotifications=async()=>{if(typeof Notification==='undefined'){setPermission('unsupported');return}try{const next=await Notification.requestPermission();setPermission(next);setDesktop(next==='granted')}catch{setPermission('denied');setDesktop(false)}};
  const enableSound=async()=>{if(!audio.current)audio.current=new AudioContext();await audio.current.resume();setSound(previous=>!previous)};
- const test=()=>emit([{id:'test:'+Date.now(),rule_id:'test',symbol:'',name:'测试',kind:'price',title:'量测 · 提醒测试',body:'通知通道测试成功；这是一条测试消息，不是行情触发。',time:new Date().toISOString(),market_time:new Date().toISOString(),price:0,test:true}]);
+ const test=()=>emit([{id:'test:'+Date.now(),rule_id:'test',symbol:'',name:'测试',kind:'price',title:'量测 · 提醒测试',body:'页面已收到测试提醒；系统通知和声音以授权与开关状态为准。这不是行情触发。',time:new Date().toISOString(),market_time:new Date().toISOString(),price:0,test:true}]);
  return {rules,events,status,error,checkedAt,desktop,sound,permission,add,toggle,remove,enableNotifications,enableSound,test,
   refresh:()=>setRevision(value=>value+1),clear:()=>{setEvents([]);localStorage.removeItem(EVENTS)}};
 }
