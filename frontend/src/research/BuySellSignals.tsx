@@ -13,10 +13,12 @@ export function BuySellSignals({signals,selected,focusedId,diagnostics,resolutio
  return <section className="lc-buy-sell" aria-label="六类买卖点">
   <div className="lc-buy-sell-heading"><b>买卖点</b><span>{resolution==='both'?'笔级观察＋线段/递归走势':resolution==='stroke'?'笔级观察 · 代理规则':'线段/递归走势级'} · 锚点与确认时刻分开</span><button onClick={showAll}>显示全部</button></div>
   <div className="lc-six-signals">{SIGNAL_CLASSES.map(kind=>{
-   const points=signals.filter(point=>point.class===kind),confirmed=points.filter(point=>point.has_confirmation).length;
+   const points=signals.filter(point=>point.class===kind),confirmed=points.filter(point=>point.has_confirmation).length,
+    audited=points.filter(point=>point.snapshot_passed&&!point.has_confirmation).length,
+    ended=points.filter(point=>['invalidated','withdrawn'].includes(point.state)).length;
    return <button key={kind} data-signal-class={kind} aria-pressed={selected===kind} className={(kind.endsWith('buy')?'buy':'sell')+(selected===kind?' selected':'')} onClick={()=>{onClass(kind);if(points.length)onSelect(points.at(-1)!)}}>
     <span><b>{CLASSES[kind]}</b><strong>{points.length}</strong></span>
-    <small>{points.length?'已确认 '+confirmed+' · 候选 '+(points.length-confirmed):'本周期未形成'}</small>
+    <small>{points.length?'事件确认 '+confirmed+' · 历史核对 '+audited+' · 失效/撤回 '+ended:'本周期未形成'}</small>
    </button>
   })}</div>
   <div className="lc-signal-actions"><span>{selected?CLASSES[selected]+'：'+group.length+' 个；'+(group.length?signalStatus(group.at(-1)!):'缺少符合规则的结构证据'):'点击类别定位历史点位，候选和失效点始终保留状态'}</span><div><button aria-label="上一个买卖点" disabled={!group.length} onClick={()=>focus(-1)}><ChevronLeft size={14}/></button><button onClick={()=>{if(group.length)onSelect(group.at(-1)!)}} disabled={!group.length}><LocateFixed size={13}/>最近点位</button><button aria-label="下一个买卖点" disabled={!group.length} onClick={()=>focus(1)}><ChevronRight size={14}/></button></div></div>

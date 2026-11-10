@@ -6,7 +6,6 @@ module never replaces an archive or certifies provider adjustment as verified.
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timedelta,timezone
-import bisect
 import calendar
 import hashlib
 import json
@@ -23,7 +22,7 @@ cache_lock=threading.Lock()
 scan_pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='period-scan')
 scan_lock=threading.Lock()
 scans={}
-observations=OrderedDict()
+from web.signal_observation import sessions as observations,observe as observe_signals
 
 
 def trading_hours(now):
@@ -76,22 +75,7 @@ def make_panel(code,period,candles,now,metadata=None):
     report=analyze_complete(code,period,closed,now.isoformat(),digest)
     from chanmodel.stroke_signals import snapshot as fine_snapshot
     fine=fine_snapshot(closed)
-    fine['confirmations']=[];fine['confirmation_records']=[]
-    closed_times=[bar.closed_at for bar in closed]
-    for point in fine['signals']:
-        passed=point['rule_audit']['passed'] and point['state']!='invalidated'
-        record={'id':point['id'],'state':'confirmed' if passed else point['state'],'first_seen_at':now.isoformat()}
-        if passed:
-            key=('stroke',code,period,point['class'],point['event_time'],point['price'])
-            witness=observations.setdefault(key,{'time':now.isoformat(),'index':len(closed)-1})
-            record.update(first_seen_at=witness['time'],confirmed_at=witness['time'])
-            fine['confirmations'].append({'signal_id':point['id'],'class':point['class'],'side':point['side'],'rank':0,
-                'resolution':'stroke','anchor':point['anchor'],'anchor_time':point['event_time'],'price':point['price'],
-                'observed_index':max(0,bisect.bisect_right(closed_times,witness['time'])-1),'observed_at':witness['time'],'confirmed_at':witness['time'],
-                'event':'confirmed','point':point,'execution_allowed':False,
-                'confirmation_semantics':'stroke_rule_current_observation; earliest_historical_confirmation_not_claimed'})
-        fine['confirmation_records'].append(record)
-    while len(observations)>2000:observations.popitem(last=False)
+    fine['confirmation_records'],fine['confirmations']=observe_signals(code,period,'stroke',fine['signals'],closed,now)
     confirmations=[];records=[];report['as_of_index']=len(closed)-1
     eligible=metadata.get('split_adjustment_verified') is True
     for point in report['signals']:
@@ -100,21 +84,9 @@ def make_panel(code,period,candles,now,metadata=None):
         audit['missing']=[key for key,value in audit['gates'].items() if not value]
         audit['passed']=not audit['missing']
         point['rule_audit']=audit
-        state='confirmed' if audit['passed'] else point['state']
-        record={'id':point['id'],'state':state,'current_state':state,'first_seen_at':now.isoformat(),
-                'confirmed_at':now.isoformat() if audit['passed'] else None,'audit':audit}
-        records.append(record)
-        if audit['passed']:
-            ident=(code,period,point['id'],point['price'])
-            witnessed=observations.setdefault(ident,{'time':now.isoformat(),'index':len(closed)-1})
-            observations.move_to_end(ident)
-            while len(observations)>2000:observations.popitem(last=False)
-            record['first_seen_at']=witnessed['time'];record['confirmed_at']=witnessed['time']
-            confirmations.append({'signal_id':point['id'],'class':point['class'],'side':point['side'],'rank':point['rank'],
-                                  'anchor':point['anchor'],'anchor_time':point['event_time'],'price':point['price'],
-                                  'observed_index':witnessed['index'],'observed_at':witnessed['time'],'confirmed_at':witnessed['time'],
-                                  'event':'confirmed','rule_audit':audit,'point':point,'execution_allowed':False,
-                                  'confirmation_semantics':'current_observation_only; earliest_historical_confirmation_not_claimed'})
+    records,confirmations=observe_signals(code,period,'segment',report['signals'],closed,now)
+    for record in records:
+        record['audit']=next(point['rule_audit'] for point in report['signals'] if point['id']==record['id'])
     signal_types=['first_buy','second_buy','third_buy','first_sell','second_sell','third_sell']
     diagnostics={kind:{'candidates':sum(point['class']==kind for point in report['signals']),
                        'confirmed':sum(point['class']==kind for point in confirmations),
@@ -150,7 +122,7 @@ def make_panel(code,period,candles,now,metadata=None):
             'refresh_after_seconds':15 if trading_hours(now) else 300,
             'market_session':'trading_hours' if trading_hours(now) else 'outside_trading_hours',
             'execution_allowed':False,'strict_original_equivalence_proven':False,
-            'backtest_scope_note':'实时确认是当前证据可见时刻，不倒填为历史最早确认；历史因果确认与成交回测请切换历史研究'}
+            'backtest_scope_note':'首次加载只核对历史结构，不把旧结构画成当前确认；在线新增闭合K线触发和历史逐根回放分别记录'}
 
 
 def live_panel(code,period,*,refresh=False):

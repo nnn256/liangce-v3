@@ -166,3 +166,23 @@
 - 浏览器agent-browser新Edge启动失败/Chromeqa renderer旧target卡住，用CDP关闭own page并新建成功。当前独立Chrome DevTools63094 sessionliangce-alerts-cdp --cdp63094，page127.0.0.1:8843；可继续用该CLI。QA旧sessionliangce-auction-alerts-qa有卡住daemon，别误动用户正常Edge。
 - 页面新增价格rule60、signal5m已成功，模拟fresh59→61 priceevent1，重复不增；模拟新增三买confirm事件成功。全部在本地QA fetch override，不是市场事实；snapshot D:/stock-dashboard-backups/auction-alerts-20261110/monitor-mobile-test.png；390/390无溢出。接下来清理本地模拟state，build最后修改→重载浏览器查看真实竞价/规则持久化/通知及手机→提交双仓main与LiangCe codex/hosted-chan-167→CI+Railway→公网实际竞价和signal/提醒入口验收→备份回滚→最终准确说明关闭页无保证。
 - 基线备份D:/stock-dashboard-backups/auction-alerts-20261110/BASELINE.zip。当前HEAD8f63810d0c5e0dd7c00138cff03fdd49e599e8f6。不要提交无关data日志。
+
+
+## 最新任务：阳光照明三卖时间错位审查，仅本地（2026-11-10）
+- 用户明确“在本地跑就行了”；本轮不commit、不push、不部署。当前线上/HEAD仍f254a85763ca40d4655988bfeb0a653543481b26，运行时data日志别混。
+- 截图sh600261/day三卖锚2017-10-27 6.18，available2017-11-07，中枢6.49—6.57；原make_panel把now当confirmed_at并observed_index6327所以旧点在2026附近画菱形。已本地完整复现6329日线(6328closed+1forming)，before-panel/source/before-replay存artifacts/local-signal-audit。
+- 逐根replay实测该点2017-11-07首次confirm；2017-11-06前缀无该点，当日prefix有。未复权已收盘后续high最高6.16未达失效6.49，故保留历史对象并不等于现在新卖点。
+- 新web/signal_observation.py分首次snapshot_audit与在线新增闭合证据，历史核对没有确认事件。fine及segment实时共同应用；窗口用时间身份和证据定位避免索引漂移；门控失败withdrawn。Docker带新module但本轮不发布。
+- 前端signalDisplay拒把旧current_observation画当前确认，confirmationPlotIndex精确查时间或跳过；ChartPane分历史核对与在线新增/回放确认，BuySell计数分事件确认/历史核对/失效；Evidence解释时间轴，alert过滤snapshot_audit。
+- 本地服务8850 exec11532，TDX bridge18089按需启动，LIANGCE_RUNTIME=.runtime/local-signal-audit。网址 http://127.0.0.1:8850/?symbol=sh600261&period=day&data=live 。版本.5-local-audit；browser sessionliangce-local-audit-cdp --cdp55080 Chrome owned。
+- 浏览器真实看到diamonds0；展开信号表点击2017-10-27/6.18后定位到历史，证据表显示2017-11-07和2026核对分别，screenshot after-current-chart.png及after-historical-signal.png已存。64项全后端已通过，后续新增1撤回测试，最终总计应65。TS/前端信号及提醒测试通过。
+- scripts/audit_signal_observation.py可对冻结source离线重放并输出audit-result.json；运行结果已成功。docs/local-signal-audit-20261110.md解释。
+- 下一步完成最后针对性测试/本地只读证据包/回滚检查、交付本地网址和简明解释。禁止上传/部署，保留用户新授权优先。
+
+
+## 当前发布授权：三卖时间标记修正（2026-11-10，版本2026.11.10.6）
+- 用户在本地审查交付后明确要求“上传”，已重新授权提交GitHub并发布既有网页/后端；之前“仅本地”限制由最新指令解除。
+- 已核对两个远程基线均f254a85763ca40d4655988bfeb0a653543481b26，真实Railway源nnn256/LiangCe codex/hosted-chan-167，备份/Pages nnn256/liangce-v3 main。
+- 本地修正web/signal_observation.py、两种实时口径、前端旧确认防护/精确时间定位/统计和证据解释、提醒过滤snapshot_audit都已验证。65项Python通过，真实2017三卖逐根回放与界面已核对。
+- 发布版本.6、更新PWA升级和文档，CI加入test_signal_observation。备份目录D:/stock-dashboard-backups/signal-time-release-20261110。
+- 下一动作重跑必需验证及构建→只暂存任务文件(排除data运行日志)→提交双仓→CI/现有Railway自动部署→公网sh600261日线旧锚6.18没有当前confirm、前端无假菱形、手机→备份回滚记录→交付。

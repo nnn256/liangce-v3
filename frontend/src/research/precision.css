@@ -7,3 +7,5 @@
 .lc-replay-actions{display:flex;gap:7px;flex-wrap:wrap}.lc-share-button{white-space:nowrap}@media(max-width:600px){.lc-replay-actions{width:100%}.lc-precision-heading{flex-wrap:wrap}.lc-header-actions .lc-share-button{padding:6px;font-size:10px}}
 
 .lc-fractal-scales{display:flex;align-items:center;gap:7px;flex-wrap:wrap;border-bottom:1px solid #e2eaf1;padding:9px 12px;background:#fbfdff;font-size:11px;color:#607f97}.lc-fractal-scales button{padding:4px 7px;border:1px solid #d6e4ef;border-radius:4px;background:white;color:#7b8fa2}.lc-fractal-scales button[aria-pressed=true]{background:#edf4fb;color:#386f9f;border-color:#abc8e0}.lc-fractal-scales b{font-size:10px}.lc-fractal-scales label{display:flex;align-items:center;gap:3px}.lc-fractal-scales small{font-size:10px;color:#869aab}@media(max-width:600px){.lc-fractal-scales{font-size:10px;gap:5px}.lc-fractal-scales small{width:100%}.lc-share-button{max-width:100px}}
+
+.lc-time-evidence-note{padding:10px;background:#fff7e8;border:1px solid #eeddb5;border-radius:5px;font-size:11px;line-height:1.8;color:#8a7049;margin:10px 0}

@@ -175,6 +175,7 @@ def monitor_signals(code:str,period:str,resolution:str='stroke'):
         points.append({'id':point['id'],'class':point['class'],'side':point['side'],'rank':point.get('rank',0),
             'price':point['price'],'anchor_time':point['event_time'],'available_time':point.get('available_time'),
             'state':record.get('state',point['state']),'confirmed':point['id'] in confirmed,
+            'confirmation_origin':record.get('confirmation_origin'),'evidence_at':record.get('evidence_at'),
             'confirmed_at':confirmed.get(point['id'],{}).get('confirmed_at'),'definition_mode':point.get('definition_mode'),
             'confirmation_semantics':confirmed.get(point['id'],{}).get('confirmation_semantics')})
     return JSONResponse({'symbol':code,'period':period,'resolution':resolution,'signals':points,'fetched_at':panel['fetched_at'],

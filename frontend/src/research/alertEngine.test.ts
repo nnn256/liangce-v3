@@ -21,4 +21,5 @@ signals=evaluateSignals(signalRule,signals.state,{...data,signals:[a,fresh,{...f
 assert.equal(signals.events.length,1);assert.equal(signals.events[0].definition_mode,'stroke_proxy');
 assert.equal(evaluateSignals(signalRule,{initialized:true,seen:[]},{...data,market_session:'outside_trading_hours'},now).events.length,0);
 assert.equal(evaluateSignals(signalRule,{initialized:true,seen:[]},{...data,signals:[{...fresh,confirmed:false,state:'candidate'}]},now).events.length,0);
+assert.equal(evaluateSignals(signalRule,{initialized:true,seen:[]},{...data,signals:[{...fresh,confirmed:true,state:'snapshot_validated',confirmation_origin:'snapshot_audit'}]},now).events.length,0,'First-time audit of historical geometry cannot become a current alert');
 console.log('Live alert rules reject stale prices, deduplicate crossings, baseline signals and preserve confirmation semantics.');

@@ -69,22 +69,23 @@ class AuctionTests(unittest.TestCase):
         self.assertNotIn('bars',result.json())
         self.assertEqual(client.get('/api/research/monitor-signals/sz300949/auction').status_code,422)
 
-    def test_stroke_current_confirmation_never_backdates_the_observation(self):
+    def test_stroke_snapshot_audit_does_not_confirm_old_structure_at_current_time(self):
         from chanmodel.model import Candle
         bars=[Candle(i,10,11,9,10,f'2026-11-{i+2:02}T15:00:00+08:00',10000,True) for i in range(5)]
         point={'id':'test-current-stroke','class':'third_buy','side':'buy','rank':0,'price':9,'anchor':1,
-               'event_time':bars[1].closed_at,'state':'candidate','rule_audit':{'passed':True}}
+               'event_time':bars[1].closed_at,'available_at':3,'state':'candidate','rule_audit':{'passed':True}}
         now=datetime(2026,11,10,10,0,tzinfo=auction.CN)
         live.observations.clear()
         fine={'signals':[point],'strokes':[],'fractals':[],'centers':[]}
         with patch('chanmodel.stroke_signals.snapshot',side_effect=lambda closed:copy.deepcopy(fine)):
             first=live.make_panel('sz300949','day',bars,now)
             later=live.make_panel('sz300949','day',bars,now+timedelta(seconds=20))
-        event=first['stroke_model']['confirmations'][0]
-        self.assertEqual(event['confirmed_at'],now.isoformat())
-        self.assertNotEqual(event['confirmed_at'],point['event_time'])
-        self.assertIn('current_observation',event['confirmation_semantics'])
-        self.assertEqual(later['stroke_model']['confirmations'][0]['confirmed_at'],event['confirmed_at'])
+        self.assertEqual(first['stroke_model']['confirmations'],[])
+        record=first['stroke_model']['confirmation_records'][0]
+        self.assertEqual(record['state'],'snapshot_validated')
+        self.assertEqual(record['evidence_at'],bars[3].closed_at)
+        self.assertNotIn('confirmed_at',record)
+        self.assertEqual(later['stroke_model']['confirmation_records'][0]['first_checked_at'],record['first_checked_at'])
 
 
 if __name__=='__main__':unittest.main()
