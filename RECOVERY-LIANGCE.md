@@ -186,3 +186,13 @@
 - 本地修正web/signal_observation.py、两种实时口径、前端旧确认防护/精确时间定位/统计和证据解释、提醒过滤snapshot_audit都已验证。65项Python通过，真实2017三卖逐根回放与界面已核对。
 - 发布版本.6、更新PWA升级和文档，CI加入test_signal_observation。备份目录D:/stock-dashboard-backups/signal-time-release-20261110。
 - 下一动作重跑必需验证及构建→只暂存任务文件(排除data运行日志)→提交双仓→CI/现有Railway自动部署→公网sh600261日线旧锚6.18没有当前confirm、前端无假菱形、手机→备份回滚记录→交付。
+
+
+## 当前：全部实时更新（2026-11-10版本.7）
+- 用户要求“全部改实时更新”，继承上传发布授权。HEAD84c0493866d857e590ef82f973e8e3e4bfc7bb7f，两个仓库均此基线。备份D:/stock-dashboard-backups/all-live-20261110/BASELINE.zip，无关data日志不能提交。
+- 已实现web/live_preview.py，隔离假设性形成中结构差异和末端价格预览，标live_preview/not_confirmed，不进入signal_observation、回测或提醒；正式结构仅闭合。结构缓存按digest2条复用、深拷贝避免污染；livepanel输出revision/preview。Docker带新模块。
+- 交易报价5秒/结构10秒/monitor10秒/auction5秒，休市300秒；已开启period scan约30秒持续刷新，完成不停止。前端createLivePoller统一串行不叠请求、下载耗时计周期、隐藏恢复/退出取消。主图不再跳旧信号，已更新ChartPane现有series而非每轮重建。右侧currentEvidence与Focus随最新panel重查或标消失。
+- 前端默认显示预览，可开关；withLivePreview保持原确认和历史回测隔离。选择stock/period回live，专门replay模式固定历史。useAlerts cadence更新，filter拒preview，仍仅开网页运行无云端push保证。
+- 69项Python通过、TS/新livePolling/liveView与旧signal/alert测试通过；最终ChartPane微调sourcekind依赖需最后lint/build。docs/all-live-updates-20261110.md已写。
+- 本地服务8852exec17087较早版本；8853exec64803最新mainmodel带tails；8854exec1642独立受控价格QA(不发布)source local_qa_controlled_update，用真实冻结日线每轮1秒控制末端价，不是市场数据。browser sessionliangce-all-live-final在8854；读数5.73→5.89，右侧tailprice同步，diamonds0。390/390无overflow；调整成现有series避免ready闪烁后需重载browser再验。
+- 下一步最后lint/build/browser fasttick canvas同一对象验证→提交双仓main和nnn256/LiangCe codex/hosted-chan-167→CI和Railway→公网日线preview/quote5chart10/69test/手机与无假当前确认→备份回滚→交付新链接与正式确认等闭合证据。

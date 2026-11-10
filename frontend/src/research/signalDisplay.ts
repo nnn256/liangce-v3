@@ -66,6 +66,7 @@ export function displaySignals(panel:Panel|null):Evidence[]{
 }
 
 export function signalStatus(point:Evidence){
+ if(point.live_preview||point.state==='live_preview')return point.preview_status==='invalidated'?'失效预览 · 未收盘':'实时预览 · 未收盘';
  const ended=point.state==='invalidated'?'已失效':point.state==='withdrawn'?'已撤回':'';
  return (!snapshotConfirmation(point)&&(point.has_confirmation||point.event==='confirmed')?
   (point.confirmation_origin==='live_closed_bar_transition'||point.confirmation_semantics?.includes('live_closed_bar_transition')?'在线新增确认':point.confirmation_semantics?.startsWith('stroke_rule')?'笔级规则确认':'历史确认'):

@@ -31,7 +31,7 @@ export function useAlerts(enabled:boolean){
   const run=async()=>{
    if(disposed||running)return;
    if(navigator.onLine===false){setStatus('网络离线，等待恢复');timer=setTimeout(run,10000);return}
-   running=true;setError('');const failures:string[]=[];let interval=300000;
+   const started=Date.now();running=true;setError('');const failures:string[]=[];let interval=300000;
    try{
     const prices=active.filter(rule=>rule.kind==='price');
     if(prices.length){try{
@@ -39,7 +39,7 @@ export function useAlerts(enabled:boolean){
      if(disposed)return;interval=data.refresh_after_seconds*1000;
      for(const rule of prices){const result=evaluatePrice(rule,states.current[rule.id]||{},data.quotes[rule.symbol],Date.now());states.current[rule.id]=result.state;emitRef.current(result.events)}
      if(data.missing.length||data.error)failures.push(data.error||'部分监控股票缺少新报价');
-    }catch(e:any){if(!control.signal.aborted){failures.push(e.message);interval=Math.min(interval,30000)}}}
+    }catch(e:any){if(!control.signal.aborted){failures.push(e.message);interval=Math.min(interval,10000)}}}
     const signals=active.filter(rule=>rule.kind==='signal');
     if(signals.length&&Date.now()>=signalDue){
      const groups=new Map<string,AlertRule[]>();for(const rule of signals){const key=rule.symbol+'/'+rule.period+'?resolution='+rule.resolution;groups.set(key,[...(groups.get(key)||[]),rule])}
@@ -48,12 +48,12 @@ export function useAlerts(enabled:boolean){
       const data=await request<Evidence>('/api/research/monitor-signals/'+key,{cache:'no-store'},control.signal,90000);if(disposed)return;
       next=Math.min(next,data.refresh_after_seconds*1000);
       for(const rule of items){const result=evaluateSignals(rule,states.current[rule.id]||{},data,Date.now());states.current[rule.id]=result.state;emitRef.current(result.events)}
-     }catch(e:any){if(!control.signal.aborted){failures.push(items[0].name+'：'+e.message);next=Math.min(next,30000)}}}
-     signalDue=Date.now()+next;
+     }catch(e:any){if(!control.signal.aborted){failures.push(items[0].name+'：'+e.message);next=Math.min(next,10000)}}}
+     signalDue=Math.max(Date.now()+250,started+next);
     }
     if(signals.length)interval=Math.min(interval,Math.max(1000,signalDue-Date.now()));
     if(!disposed){localStorage.setItem(STATES,JSON.stringify(states.current));setCheckedAt(new Date().toISOString());setStatus(document.hidden?'页面在后台，浏览器可能暂停监控':'监控运行中 · 仅提醒新增事件');setError(failures.join('；'))}
-   }finally{running=false;if(!disposed)timer=setTimeout(run,document.hidden?Math.max(interval,60000):interval)}
+   }finally{running=false;if(!disposed)timer=setTimeout(run,document.hidden?Math.max(interval,60000):Math.max(250,interval-(Date.now()-started)))}
   };
   const resume=()=>{if(!document.hidden){clearTimeout(timer);signalDue=0;void run()}};
   document.addEventListener('visibilitychange',resume);window.addEventListener('online',resume);void run();

@@ -13,7 +13,7 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements-hosted.txt httpx
-      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider tests.test_precision_backtest tests.test_stroke_signals tests.test_auction_panel tests.test_signal_observation -v
+      - run: python -m unittest tests.test_research_api tests.test_hosted_server tests.test_research_quotes tests.test_chan_six_signals tests.test_realtime_panel tests.test_tdx_provider tests.test_precision_backtest tests.test_stroke_signals tests.test_auction_panel tests.test_signal_observation tests.test_live_preview -v
         env:
           PYTHONUTF8: '1'
   hosted-container:

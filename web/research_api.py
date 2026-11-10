@@ -87,7 +87,7 @@ def health():
                                  if os.environ.get('LIANGCE_TDX_API') or os.environ.get('LIANGCE_TDX_BINARY') else
                                  'acb6104/opentdx' if os.environ.get('LIANGCE_OPENTDX_PYTHON') else 'stock-dashboard/market_gateway'),
             'tdx_configured':bool(os.environ.get('LIANGCE_TDX_API') or os.environ.get('LIANGCE_TDX_BINARY') or os.environ.get('LIANGCE_OPENTDX_PYTHON')),
-            'refresh_seconds':{'quotes_trading':10,'chart_trading':15,'outside_trading_hours':300},
+            'refresh_seconds':{'quotes_trading':5,'chart_trading':10,'signals_trading':10,'auction_trading':5,'outside_trading_hours':300},
             'frontend_url':'https://nnn256.github.io/liangce-v3/',
             'engine':'original_clause_gated_causal_confirmation_v1','execution_allowed':False}
 
@@ -182,7 +182,7 @@ def monitor_signals(code:str,period:str,resolution:str='stroke'):
         'structure_as_of':panel['structure_as_of'],'source':panel['provenance']['source'],'market_session':panel['market_session'],
         'definition_mode':'stroke_proxy' if resolution=='stroke' else panel['definition_mode'],
         'observation_scope':'current_live_evidence; first subscription establishes baseline without historical notifications',
-        'refresh_after_seconds':30 if panel['market_session']=='trading_hours' else 300,'execution_allowed':False},headers={'Cache-Control':'no-store'})
+        'refresh_after_seconds':10 if panel['market_session']=='trading_hours' else 300,'execution_allowed':False},headers={'Cache-Control':'no-store'})
 
 
 @router.post('/precision-backtests')
@@ -251,7 +251,7 @@ def quotes(symbols:str):
     if not 1<=len(parts)<=80 or len(symbols)>1200:raise HTTPException(422,'每次最多查询80只股票')
     try:codes=list(dict.fromkeys(symbol(x) for x in parts))
     except ValueError as error:raise HTTPException(422,str(error))
-    now=datetime.now(CN);active=quote_session(now);ttl=5 if active else 300
+    now=datetime.now(CN);active=quote_session(now);ttl=2 if active else 300
     failure=None
     # Serialize cache misses so concurrent visitors share one upstream batch.
     with quote_lock:
@@ -273,7 +273,7 @@ def quotes(symbols:str):
     if not results:raise HTTPException(503,'行情源暂不可用，请稍后重试；未使用演示报价')
     return {'quotes':results,'missing':[code for code in codes if code not in results],
             'market_session':'trading_hours' if active else 'outside_trading_hours',
-            'refresh_after_seconds':10 if active else 300,'error':failure,
+            'refresh_after_seconds':5 if active else 300,'error':failure,
             'received_at':datetime.now(CN).isoformat(),'meaning':'休市保留最近交易报价；报价时间与结构快照时间分别记录'}
 
 

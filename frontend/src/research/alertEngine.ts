@@ -24,7 +24,7 @@ export function signalKey(point:Evidence){return [point.class,point.side,point.r
 
 export function evaluateSignals(rule:AlertRule,state:AlertState,data:Evidence,now:number):{state:AlertState;events:AlertEvent[]}{
  if(!rule.enabled)return {state,events:[]};
- const active=(data.signals||[]).filter((point:Evidence)=>rule.classes?.includes(point.class)&&!['invalidated','withdrawn','snapshot_validated'].includes(point.state)&&point.confirmation_origin!=='snapshot_audit'&&(!rule.confirmedOnly||point.confirmed));
+ const active=(data.signals||[]).filter((point:Evidence)=>rule.classes?.includes(point.class)&&!point.live_preview&&!['invalidated','withdrawn','snapshot_validated','live_preview'].includes(point.state)&&!['snapshot_audit','unfinished_candle_preview'].includes(point.confirmation_origin)&&(!rule.confirmedOnly||point.confirmed));
  const known=new Set(state.seen||[]),added=active.filter((point:Evidence)=>!known.has(signalKey(point)));
  const seen=[...new Set([...(state.seen||[]),...active.map(signalKey)])].slice(-3000);
  const structureTime=Date.parse(data.structure_as_of),fetchTime=data.fetched_at?Date.parse(data.fetched_at):now;

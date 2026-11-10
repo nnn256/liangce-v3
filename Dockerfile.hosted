@@ -25,6 +25,7 @@ COPY scripts/data_feed.py scripts/data_layer.py scripts/stock_dashboard.py scrip
 COPY web/hosted_server.py web/research_api.py web/market_gateway.py web/realtime_panel.py web/tdx_provider.py web/precision_backtest.py ./web/
 COPY web/auction_panel.py ./web/
 COPY web/signal_observation.py ./web/
+COPY web/live_preview.py ./web/
 COPY web/dist ./web/dist
 COPY data/research ./data/research
 COPY data/precision-replays ./data/precision-replays
