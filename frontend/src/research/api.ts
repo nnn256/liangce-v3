@@ -1,4 +1,5 @@
 import type {Panel,Stock} from './types';
+import {BackendIdentityError,connectBackend} from './backendConnection';
 const BASE=import.meta.env.BASE_URL;
 const PUBLIC_BACKEND='https://liangce-v3-api-production.up.railway.app';
 export function defaultBackend(){
@@ -22,23 +23,13 @@ export async function request<T=any>(path:string,options:RequestInit={},signal?:
  if(!response.ok){let message='请求失败 '+response.status;try{const b=await response.json();message=typeof b.detail==='string'?b.detail:JSON.stringify(b.detail||b.message||b)}catch{}throw new ApiError(message,response.status)}
  const type=response.headers.get('content-type')||'';if(!type.includes('json'))throw new Error('当前网址未连接研究后端');return response.json();
 }
-export async function wakeBackend(signal?:AbortSignal){
+export async function wakeBackend(signal?:AbortSignal,onRetry?:(failure:unknown)=>void){
  if(publicStatic()&&!backend())return request('/api/research/health',{},signal);
- const deadline=Date.now()+90000;let failure:unknown;
- while(Date.now()<deadline){
-  if(signal?.aborted)throw signal.reason;
-  try{
-   const data=await request('/api/research/health',{},signal,Math.min(15000,deadline-Date.now()));
+ return connectBackend({signal,onRetry,active:()=>!document.hidden&&navigator.onLine!==false,request:async()=>{
+   const data=await request('/api/research/health',{cache:'no-store'},signal,15000);
    if(data.status==='ok'&&data.product==='量测 v3')return data;
-   throw new Error('服务正在唤醒，尚未返回研究后端状态');
-  }catch(error){
-   if(signal?.aborted)throw error;
-   failure=error;
-   if(error instanceof Error&&/401|403|令牌|只读/.test(error.message))throw error;
-   await new Promise<void>((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(signal?.reason)};const timer=setTimeout(()=>{signal?.removeEventListener('abort',abort);resolve()},1500);signal?.addEventListener('abort',abort,{once:true})});
-  }
- }
- throw failure instanceof Error?new Error('后端唤醒未完成，请稍后重试。'+failure.message):new Error('后端唤醒超时，请稍后重试');
+   throw new BackendIdentityError('当前网址未返回量测研究服务，请检查后端地址');
+ }});
 }
 export async function archivedPanel(symbol:string,period:string,signal?:AbortSignal):Promise<Panel>{
  const manifest=await fetch(BASE+'research/manifest.json',{signal}).then(r=>{if(!r.ok)throw Error('静态研究目录不可用');return r.json()});

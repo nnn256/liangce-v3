@@ -147,3 +147,11 @@
 - structureScale.ts按K线/笔端/段端分层，保留全分型及价格、原锚点、父结构证据时刻，不把大标记冒称跨周期级别。structureOverlay.ts合并fine笔/粗段/两套中枢信号，三按钮默认同时高亮，回测独立口径。ChartPane显示三开关、全部价格与幅度/根数，已截图D:/stock-dashboard-backups/share-backtest-20261110/all-structures.png。
 - 51项Python通过，TS通过，structureScale/structureOverlay tests通过。当前少量末尾修改需最终lint/build和浏览器再确认→提交GitHub main→CI→既有Railway发布→公网新华5日K实际顶部回测→新浏览器分享/mobile验收→备份回滚/交付。
 - 基线D:/stock-dashboard-backups/share-backtest-20261110/BASELINE.zip，Git当前HEAD57ba5ee。无关data运行日志别提交。
+
+
+## 当前：手机独立唤醒后端/首次连接重试（2026-11-10版本.4）
+- 用户问为什么电脑打开手机才连接，已查Railway现有部署sleepApplication=true；电脑可唤醒共享实例，但无用户手机日志不能排除网络问题。
+- 已修wakeBackend原90秒后停止问题：backendConnection.ts可取消前台自动重连，早期1.5秒随后10秒，隐藏/离线暂停，401/403/404/身份错误不重试；ResearchApp连接成功且无主图时立即请求，唤醒状态清晰。
+- 新backendConnection.test.ts通过，TS与构建通过。模拟服务8841脚本.runtime/test_mobile_wake.py health前7次503+panel首请求503，browser sessionliangce-phone-wake-retry手机390px等恢复。实际hosted服务未人为休眠，未更改免费套餐或保活。
+- 基线备份D:/stock-dashboard-backups/mobile-wake-20261110/BASELINE.zip。当前Git基线b039de309e2147177cf8c58d6b523ff90007efae，线上真实仓库nnn256/LiangCe分支codex/hosted-chan-167，备份/Pages nnn256/liangce-v3 main，两边同步。
+- 下一动作：查看模拟浏览器恢复证据→最后lint/build/test→提交双仓并等CI/Railway自动部署→手机公网核验→备份可逆验证→交付原因和新版链接。别提交无关data日志。
